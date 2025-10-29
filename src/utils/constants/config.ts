@@ -28,3 +28,12 @@ export const STORAGE_KEYS = {
   LANGUAGE: 'language',
 } as const;
 
+/**
+ * reCAPTCHA configuration
+ */
+export const RECAPTCHA_CONFIG = {
+  SITE_KEY: import.meta.env.VITE_RECAPTCHA_SITE_KEY || '',
+  // Test key for localhost (always passes)
+  // Production: Get your own key from https://www.google.com/recaptcha/admin
+} as const;
+

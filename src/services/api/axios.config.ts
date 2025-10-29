@@ -30,11 +30,17 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error: AxiosError) => {
+    // Only redirect to login if 401 and NOT already on login/register page
     if (error.response?.status === 401) {
-      // Handle unauthorized
-      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-      window.location.href = '/login';
+      const currentPath = window.location.pathname;
+      const isAuthPage = currentPath === '/login' || currentPath === '/register';
+      
+      if (!isAuthPage) {
+        // Handle unauthorized - only redirect if not on auth pages
+        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
