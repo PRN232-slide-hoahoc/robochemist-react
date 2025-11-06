@@ -2,38 +2,21 @@
  * User model
  */
 export interface User {
-  id: string;
-  name: string;
+  userId: string;
+  fullname: string;
   email: string;
-  role: UserRole;
+  phone?: string;
+  role?: UserRole;
   avatar?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export type UserRole = 'admin' | 'user' | 'guest';
 export type UserId = string;
 
 /**
- * User DTOs
- */
-export interface CreateUserDto {
-  name: string;
-  email: string;
-  password: string;
-}
-
-export interface UpdateUserDto {
-  name?: string;
-  email?: string;
-  avatar?: string;
-}
-
-export type UserWithoutPassword = Omit<User, 'password'>;
-export type UserBasicInfo = Pick<User, 'id' | 'name' | 'email'>;
-
-/**
- * Auth models
+ * Auth models - Match backend DTOs
  */
 export interface LoginCredentials {
   email: string;
@@ -41,15 +24,37 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
-  name: string;
+  fullname: string;
   email: string;
   password: string;
-  confirmPassword: string;
+  phone?: string;
 }
 
 export interface AuthResponse {
-  user: User;
+  userId: string;
+  fullname: string;
+  email: string;
   token: string;
-  refreshToken: string;
+  expiresAt: string;
 }
+
+/**
+ * User DTOs
+ */
+export interface CreateUserDto {
+  fullname: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
+
+export interface UpdateUserDto {
+  fullname?: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+}
+
+export type UserWithoutPassword = Omit<User, 'password'>;
+export type UserBasicInfo = Pick<User, 'userId' | 'fullname' | 'email'>;
 

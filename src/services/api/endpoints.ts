@@ -1,22 +1,7 @@
+import { API_ENDPOINTS } from '@/utils/constants/api';
+
 /**
- * API Endpoints
+ * API Endpoints - Re-export from constants for convenience
  */
-export const endpoints = {
-  // Auth endpoints
-  auth: {
-    login: '/auth/login',
-    register: '/auth/register',
-    logout: '/auth/logout',
-    refresh: '/auth/refresh',
-    me: '/auth/me',
-  },
-  // User endpoints
-  users: {
-    list: '/users',
-    byId: (id: string) => `/users/${id}`,
-    create: '/users',
-    update: (id: string) => `/users/${id}`,
-    delete: (id: string) => `/users/${id}`,
-  },
-} as const;
+export const endpoints = API_ENDPOINTS;
 
