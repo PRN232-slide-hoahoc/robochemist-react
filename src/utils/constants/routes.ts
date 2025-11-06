@@ -7,6 +7,7 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   PROFILE: '/profile',
+  WALLET: '/wallet',
   NOT_FOUND: '/404',
 } as const;
 

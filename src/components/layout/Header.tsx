@@ -2,6 +2,7 @@ import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
+import { ROUTES } from '@/utils/constants/routes';
 
 export const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -20,6 +21,9 @@ export const Header: React.FC = () => {
               <a href="/dashboard" className="text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-300">
                 Dashboard
               </a>
+              <a href={ROUTES.WALLET} className="text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-300">
+                Ví
+              </a>
             </nav>
           </div>
 
@@ -35,8 +39,11 @@ export const Header: React.FC = () => {
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-700 dark:text-gray-300">
-                  {user?.name}
+                  {user?.fullname}
                 </span>
+                <Button size="sm" variant="ghost" onClick={() => window.location.href = ROUTES.WALLET}>
+                  Ví
+                </Button>
                 <Button size="sm" variant="outline" onClick={logout}>
                   Đăng xuất
                 </Button>

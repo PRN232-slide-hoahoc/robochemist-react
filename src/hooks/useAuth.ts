@@ -2,6 +2,7 @@
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/auth/authService';
 import { LoginCredentials, RegisterData } from '@/types/models.types';
+import { walletService } from '@/services/wallet/walletService';
 import { useNavigate } from 'react-router-dom';
 
 export const useLogin = () => {
@@ -14,7 +15,7 @@ export const useLogin = () => {
     try {
       const data = await authService.login(credentials);
       setToken(data.token);
-      setUser({ userId: data.userId, fullname: data.fullname, email: data.email });
+      setUser({ id: data.userId, fullname: data.fullname, email: data.email });
       navigate('/dashboard');
     } catch (err: any) {
       throw err;
@@ -31,7 +32,19 @@ export const useRegister = () => {
   const register = async (data: RegisterData) => {
     setIsLoading(true);
     try {
-      await authService.register(data);
+      const authData = await authService.register(data);
+
+      // After registration, the authService saves token/user to localStorage.
+      // Use the saved token (axiosInstance attaches it) to create a wallet for the user.
+      try {
+        await walletService.createWallet({ userId: authData.userId });
+      } catch (walletErr) {
+        // Don't block registration on wallet creation failure, but log it for debugging.
+        // Components can show a notice if desired.
+        // eslint-disable-next-line no-console
+        console.warn('Wallet creation failed after register:', walletErr);
+      }
+
       // Không auto login, chỉ return success để component xử lý
       return { success: true };
     } catch (err: any) {
@@ -55,5 +68,9 @@ export const useLogout = () => {
 
 export const useAuth = () => {
   const { user, token, isAuthenticated } = useAuthStore();
-  return { user, token, isAuthenticated: isAuthenticated() };
+  // isAuthenticated is expected to be a function on the store, but persisted state
+  // or other issues might overwrite it. Be defensive and handle both cases.
+  const authFlag = typeof isAuthenticated === 'function' ? isAuthenticated() : Boolean(isAuthenticated);
+  const logout = useLogout();
+  return { user, token, isAuthenticated: authFlag, logout };
 };

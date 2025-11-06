@@ -35,6 +35,8 @@ export const LoginForm: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
+  // Only require / render reCAPTCHA when a site key is configured
+  const requireRecaptcha = Boolean(RECAPTCHA_CONFIG.SITE_KEY);
   
   const { login, isLoading: loginLoading } = useLogin();
   const { register, isLoading: registerLoading } = useRegister();
@@ -77,8 +79,8 @@ export const LoginForm: React.FC = () => {
     setFormError('');
     setSuccessMessage('');
     
-    // Kiểm tra reCAPTCHA
-    if (!recaptchaToken) {
+    // Kiểm tra reCAPTCHA (chỉ khi cấu hình site key)
+    if (requireRecaptcha && !recaptchaToken) {
       setFormError('Vui lòng xác nhận bạn không phải là robot.');
       return;
     }
@@ -117,7 +119,7 @@ export const LoginForm: React.FC = () => {
     loginForm.reset();
     registerForm.reset();
     // Reset reCAPTCHA khi chuyển form
-    if (recaptchaRef.current) {
+    if (requireRecaptcha && recaptchaRef.current) {
       recaptchaRef.current.reset();
     }
   };
@@ -402,15 +404,18 @@ export const LoginForm: React.FC = () => {
                   transition={{ duration: 0.2 }}
                   className="flex justify-center"
                 >
-                  <div className="scale-90 origin-center">
-                    <ReCAPTCHA
-                      ref={recaptchaRef}
-                      sitekey={RECAPTCHA_CONFIG.SITE_KEY}
-                      onChange={(token) => setRecaptchaToken(token)}
-                      onExpired={() => setRecaptchaToken(null)}
-                      theme="dark"
-                    />
-                  </div>
+                  {/* Render reCAPTCHA only when a site key is configured */}
+                  {requireRecaptcha ? (
+                    <div className="scale-90 origin-center">
+                      <ReCAPTCHA
+                        ref={recaptchaRef}
+                        sitekey={RECAPTCHA_CONFIG.SITE_KEY}
+                        onChange={(token) => setRecaptchaToken(token)}
+                        onExpired={() => setRecaptchaToken(null)}
+                        theme="dark"
+                      />
+                    </div>
+                  ) : null}
                 </motion.div>
               )}
 
