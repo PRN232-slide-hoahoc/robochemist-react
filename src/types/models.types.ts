@@ -2,7 +2,7 @@
  * User model
  */
 export interface User {
-  userId: string;
+  id: string;
   fullname: string;
   email: string;
   phone?: string;
@@ -56,5 +56,5 @@ export interface UpdateUserDto {
 }
 
 export type UserWithoutPassword = Omit<User, 'password'>;
-export type UserBasicInfo = Pick<User, 'userId' | 'fullname' | 'email'>;
+export type UserBasicInfo = Pick<User, 'id' | 'fullname' | 'email'>;
 

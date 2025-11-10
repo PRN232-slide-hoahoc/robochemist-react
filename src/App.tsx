@@ -7,6 +7,10 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 const HomePage = lazy(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const WalletPage = lazy(() => import('@/pages/WalletPage').then(m => ({ default: m.WalletPage })));
+const TemplatesPage = lazy(() => import('@/pages/TemplatesPage/TemplatesPage').then(m => ({ default: m.TemplatesPage })));
+const SlidesPage = lazy(() => import('@/pages/SlidesPage/SlidesPage').then(m => ({ default: m.SlidesPage })));
+const ExamsPage = lazy(() => import('@/pages/ExamsPage/ExamsPage').then(m => ({ default: m.ExamsPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 // Loading component
@@ -25,6 +29,10 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/wallet" element={<WalletPage />} />
+            <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/slides" element={<SlidesPage />} />
+            <Route path="/exams" element={<ExamsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
