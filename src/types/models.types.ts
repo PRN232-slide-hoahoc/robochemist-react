@@ -56,5 +56,5 @@ export interface UpdateUserDto {
 }
 
 export type UserWithoutPassword = Omit<User, 'password'>;
-export type UserBasicInfo = Pick<User, 'userId' | 'fullname' | 'email'>;
+export type UserBasicInfo = Pick<User, 'id' | 'fullname' | 'email'>;
 

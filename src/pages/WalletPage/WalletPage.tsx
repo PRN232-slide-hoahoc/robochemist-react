@@ -27,6 +27,10 @@ export const WalletPage: React.FC = () => {
   const [refundReference, setRefundReference] = useState<string | null>(null);
   const [isRefunding, setIsRefunding] = useState(false);
   const [depositAmount, setDepositAmount] = useState<number | ''>(50000);
+  const [isWaitingForDeposit, setIsWaitingForDeposit] = useState(false);
+  const depositPollingRef = React.useRef(false);
+
+  const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
   const loadWallet = async () => {
     setLoading(true);
@@ -67,15 +71,65 @@ export const WalletPage: React.FC = () => {
     void loadWallet();
   }, [isAuthenticated]);
 
-  const handleCreateDeposit = async () => {
+  // legacy simple create removed — use handleCreateDepositAndWait instead
+
+  // Enhanced deposit: open payment page then poll balance until it's updated
+  const handleCreateDepositAndWait = async () => {
     try {
-  const amount = typeof depositAmount === 'number' ? depositAmount : 10000;
+      const amount = typeof depositAmount === 'number' ? depositAmount : 10000;
+      // get current balance snapshot
+      const before = (await walletService.getBalance())?.balance ?? null;
+
       const url = await walletService.createDepositUrl({ userId: user?.id, amount });
-      if (typeof url === 'string') window.open(url, '_blank');
-      else alert('Không nhận được URL nạp tiền');
+      if (typeof url !== 'string') {
+        alert('Không nhận được URL nạp tiền');
+        return;
+      }
+
+      // open payment page in new window/tab
+      const win = window.open(url, '_blank');
+
+      setIsWaitingForDeposit(true);
+      depositPollingRef.current = true;
+
+      try {
+        const maxAttempts = 20; // ~60s if using 3s interval
+        const interval = 3000;
+        for (let i = 0; i < maxAttempts; i++) {
+          // if user closed the popup early, still check once more then break
+          if (win && win.closed) {
+            // give backend a moment then check balance once
+            await sleep(1000);
+            const after = (await walletService.getBalance())?.balance ?? null;
+            if (after !== before) {
+              alert('Nạp tiền thành công');
+              await loadWallet();
+            } else {
+              alert('Cửa sổ thanh toán đã đóng nhưng chưa xác nhận được giao dịch. Vui lòng kiểm tra lịch sử giao dịch.');
+            }
+            return;
+          }
+
+          await sleep(interval);
+          const after = (await walletService.getBalance())?.balance ?? null;
+          if (after !== before) {
+            alert('Nạp tiền thành công');
+            await loadWallet();
+            return;
+          }
+        }
+
+        // timed out
+        alert('Không xác nhận được giao dịch sau khi nạp tiền. Vui lòng kiểm tra lịch sử giao dịch.');
+      } finally {
+        depositPollingRef.current = false;
+        setIsWaitingForDeposit(false);
+      }
     } catch (err: any) {
-      console.error('Create deposit URL error', err);
-      alert(err?.response?.data?.message || 'Tạo đường dẫn nạp tiền thất bại');
+      console.error('Create deposit+wait error', err);
+      alert(err?.response?.data?.message || 'Quá trình nạp tiền thất bại');
+      setIsWaitingForDeposit(false);
+      depositPollingRef.current = false;
     }
   };
 
@@ -143,7 +197,9 @@ export const WalletPage: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <Button onClick={handleCreateDeposit}>Tạo đường dẫn nạp tiền</Button>
+                      <Button onClick={handleCreateDepositAndWait} disabled={isWaitingForDeposit}>
+                        {isWaitingForDeposit ? 'Đang chờ xác nhận...' : 'Tạo đường dẫn nạp tiền'}
+                      </Button>
                     </div>
                   </div>
                 </div>

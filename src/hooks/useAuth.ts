@@ -28,24 +28,30 @@ export const useLogin = () => {
 
 export const useRegister = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const { setUser, setToken } = useAuthStore();
 
   const register = async (data: RegisterData) => {
     setIsLoading(true);
     try {
+      // Perform registration (will also save token/user to localStorage)
       const authData = await authService.register(data);
 
-      // After registration, the authService saves token/user to localStorage.
-      // Use the saved token (axiosInstance attaches it) to create a wallet for the user.
+      // Keep the in-memory auth store in sync so other hooks/components can
+      // immediately rely on the token/user (mirrors useLogin behaviour).
+      setToken(authData.token);
+      setUser({ id: authData.userId, fullname: authData.fullname, email: authData.email });
+
+      // Create wallet for the user. Backend reads the user id from token claims,
+      // so no payload is required. Don't block registration on wallet creation
+      // failure, but log for debugging.
       try {
-        await walletService.createWallet({ userId: authData.userId });
+        await walletService.createWallet(undefined);
       } catch (walletErr) {
-        // Don't block registration on wallet creation failure, but log it for debugging.
-        // Components can show a notice if desired.
         // eslint-disable-next-line no-console
         console.warn('Wallet creation failed after register:', walletErr);
       }
 
-      // Không auto login, chỉ return success để component xử lý
+      // Return success so calling component can decide next step (no auto-login)
       return { success: true };
     } catch (err: any) {
       throw err;
