@@ -3,6 +3,7 @@ import { API_ENDPOINTS } from '@/utils/constants/api';
 import type {
   Template,
   UserTemplate,
+  UserTemplateResponse,
   UploadTemplateRequest,
   UploadTemplateResponse,
   GrantTemplateAccessRequest,
@@ -154,8 +155,8 @@ export const templateService = {
   /**
    * Get user's templates
    */
-  async getMyTemplates(): Promise<UserTemplate[]> {
-    const response = await apiClient.get<ApiResponse<UserTemplate[]>>(
+  async getMyTemplates(): Promise<UserTemplateResponse[]> {
+    const response = await apiClient.get<ApiResponse<UserTemplateResponse[]>>(
       `${USER_TEMPLATE_API_BASE}`
     );
     return response.data.data;

@@ -68,6 +68,51 @@ export interface GenerateSlideResponse {
 }
 
 /**
+ * Slide detail item (matches backend SlideDetailDto)
+ */
+export interface SlideDetailDto {
+  generatedSlideId: string;
+  slideRequestId: string;
+  fileFormat?: string;
+  filePath?: string;
+  fileSize?: number;
+  slideCount?: number;
+  generationStatus?: string;
+  processingTime?: number;
+  generatedAt?: string;
+  // Request information
+  numberOfSlides?: number;
+  aiPrompt?: string;
+  requestStatus?: string;
+  requestedAt?: string;
+  // Syllabus information
+  syllabusId: string;
+  syllabusLesson: string;
+  learningObjectives?: string;
+  lessonOrder?: number;
+  // Topic information
+  topicId: string;
+  topicName: string;
+  topicSortOrder?: number;
+  // Grade information
+  gradeId: string;
+  gradeName: string;
+}
+
+/**
+ * Paginated result
+ */
+export interface PaginatedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+/**
  * API response wrapper
  */
 interface ApiResponse<T> {
@@ -133,22 +178,100 @@ export const slideService = {
   },
 
   /**
+   * Get slide generation history with pagination, filtering, and sorting
+   */
+  async getSlideHistory(
+    pageNumber: number = 1, 
+    pageSize: number = 10,
+    gradeId?: string,
+    topicId?: string,
+    generationStatus?: string,
+    sortBy: string = 'GeneratedAt',
+    sortOrder: 'asc' | 'desc' = 'desc'
+  ): Promise<PaginatedResult<SlideDetailDto>> {
+    const params = new URLSearchParams({
+      pageNumber: pageNumber.toString(),
+      pageSize: pageSize.toString(),
+      sortBy,
+      sortOrder,
+    });
+
+    if (gradeId) params.append('gradeId', gradeId);
+    if (topicId) params.append('topicId', topicId);
+    if (generationStatus) params.append('generationStatus', generationStatus);
+
+    const response = await axiosInstance.get<ApiResponse<PaginatedResult<SlideDetailDto>>>(
+      `${API_ENDPOINTS.SLIDES.BASE}?${params.toString()}`
+    );
+    
+    return response.data.data || {
+      items: [],
+      totalCount: 0,
+      pageNumber: 1,
+      pageSize: 10,
+      totalPages: 0,
+      hasPreviousPage: false,
+      hasNextPage: false,
+    };
+  },
+
+  /**
    * Generate slides
    */
   async generateSlide(request: GenerateSlideRequest): Promise<GenerateSlideResponse> {
-    const payload = {
-      SyllabusId: request.syllabusId,
-      NumberOfSlides: request.numberOfSlides,
-      AiPrompt: request.aiPrompt,
-      TemplateId: request.templateId,
+    const payload: any = {
+      syllabusId: request.syllabusId,
+      numberOfSlides: request.numberOfSlides,
+      templateId: request.templateId,
     };
 
+    // Only include aiPrompt if it has a value
+    if (request.aiPrompt) {
+      payload.aiPrompt = request.aiPrompt;
+    }
+
+    console.log('Sending generate slide request:', payload);
+
     const response = await axiosInstance.post<ApiResponse<GenerateSlideResponse>>(
-      API_ENDPOINTS.SLIDES.GENERATE, 
-      payload
+      API_ENDPOINTS.SLIDES.GENERATE,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 600000,
+      }
     );
     
+    console.log('Generate slide response:', response.data);
+    
     return response.data.data ?? response.data as any;
+  },
+
+  /**
+   * Download slide file by ID
+   */
+  async downloadSlide(slideId: string): Promise<Blob> {
+    const response = await axiosInstance.get(
+      API_ENDPOINTS.SLIDES.SLIDE_DOWNLOAD(slideId),
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data;
+  },
+
+  /**
+   * Download file by object key (filePath from backend)
+   */
+  async downloadFileByPath(objectKey: string): Promise<Blob> {
+    const response = await axiosInstance.get(
+      `${API_ENDPOINTS.TEMPLATE.FILES_DOWNLOAD}?objectKey=${encodeURIComponent(objectKey)}`,
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data;
   },
 };
 

@@ -40,6 +40,28 @@ export interface UserTemplate {
   version: number;
 }
 
+/**
+ * UserTemplateResponse - Returned from GetMyTemplates endpoint
+ * Contains complete template information accessible by current user
+ */
+export interface UserTemplateResponse {
+  templateId: string;
+  objectKey: string;
+  templateName: string;
+  description?: string;
+  thumbnailUrl?: string;
+  previewUrl?: string;
+  contentStructure?: string;
+  slideCount: number;
+  isPremium: boolean;
+  price: number;
+  downloadCount: number;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  version: number;
+}
+
 export interface UploadTemplateRequest {
   file: File;
   thumbnailFile?: File; // Optional thumbnail image

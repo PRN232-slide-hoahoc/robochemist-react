@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
     QUESTION_BY_ID: (id: string) => `/exam/v1/questions/${id}`,
   },
   SLIDES: {
+    BASE: '/slides/v1/slides',
     GRADES: '/slides/v1/grades',
     GRADE_BY_ID: (id: string) => `/slides/v1/grades/${id}`,
     GENERATE: '/slides/v1/slides/generate',
