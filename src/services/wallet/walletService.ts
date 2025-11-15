@@ -1,22 +1,23 @@
 import { axiosInstance } from '@/services/api/axios.config';
 import { ApiResponse } from '@/types/api.types';
 import { endpoints } from '@/services/api/endpoints';
+import { DepositCallback, DepositRequest, Transaction, WalletDto} from '@/types/wallet.type';
 
 class WalletService {
   /**
    * Create a deposit checkout URL
    */
-  async createDepositUrl(payload: any): Promise<string> {
-    const resp = await axiosInstance.post<ApiResponse<string>>(endpoints.WALLET.CREATE_DEPOSIT_URL, payload);
+  async createDepositUrl(payload: DepositRequest): Promise<string> {
+    const resp = await axiosInstance.post<ApiResponse<string>>(endpoints.WALLET.WALLET_DEPOSIT, payload);
     return resp.data?.data;
   }
 
   /**
-   * Deposit callback (webhook)
+   * Deposit callback
    */
-  async depositCallback(payload: any): Promise<any> {
-    const resp = await axiosInstance.post<ApiResponse<any>>(endpoints.WALLET.DEPOSIT_CALLBACK, payload);
-    return resp.data;
+  async depositCallback(payload: DepositCallback): Promise<Transaction> {
+    const resp = await axiosInstance.post<ApiResponse<Transaction>>(endpoints.WALLET.WALLET_DEPOSIT_CALLBACK, payload);
+    return resp.data?.data;
   }
 
   /**
@@ -38,16 +39,16 @@ class WalletService {
   /**
    * Get all transactions
    */
-  async getAllTransactions(): Promise<any[]> {
-    const resp = await axiosInstance.get<ApiResponse<any[]>>(endpoints.WALLET.GET_ALL_TRANSACTIONS);
+  async getAllTransactions(): Promise<Transaction[]> {
+    const resp = await axiosInstance.get<ApiResponse<Transaction[]>>(endpoints.WALLET.GET_ALL_TRANSACTIONS);
     return resp.data?.data;
   }
 
   /**
-   * Get wallets (for admin or listing)
+   * Get wallet
    */
-  async getWallet(): Promise<any> {
-    const resp = await axiosInstance.get<ApiResponse<any>>(endpoints.WALLET.WALLETS);
+  async getWallet(): Promise<WalletDto> {
+    const resp = await axiosInstance.get<ApiResponse<WalletDto>>(endpoints.WALLET.WALLET);
     return resp.data?.data;
   }
 
@@ -55,7 +56,7 @@ class WalletService {
    * Create wallet for user
    */
   async createWallet(payload: any): Promise<any> {
-    const resp = await axiosInstance.post<ApiResponse<any>>(endpoints.WALLET.WALLETS, payload);
+    const resp = await axiosInstance.post<ApiResponse<any>>(endpoints.WALLET.WALLET, payload);
     return resp.data?.data;
   }
 
@@ -63,7 +64,7 @@ class WalletService {
    * Get wallet balance for current user
    */
   async getBalance(): Promise<any> {
-    const resp = await axiosInstance.get<ApiResponse<any>>(endpoints.WALLET.WALLETS_BALANCE);
+    const resp = await axiosInstance.get<ApiResponse<any>>(endpoints.WALLET.WALLET_BALANCE);
     return resp.data?.data;
   }
 
@@ -71,7 +72,7 @@ class WalletService {
    * Create a payment (wallet payment)
    */
   async createWalletPayment(payload: any): Promise<any> {
-    const resp = await axiosInstance.post<ApiResponse<any>>(endpoints.WALLET.WALLETS_PAYMENT, payload);
+    const resp = await axiosInstance.post<ApiResponse<any>>(endpoints.WALLET.WALLET_PAYMENT, payload);
     return resp.data?.data;
   }
 
@@ -79,7 +80,7 @@ class WalletService {
    * Create refund via wallets endpoint
    */
   async createWalletRefund(payload: any): Promise<any> {
-    const resp = await axiosInstance.post<ApiResponse<any>>(endpoints.WALLET.WALLETS_REFUND, payload);
+    const resp = await axiosInstance.post<ApiResponse<any>>(endpoints.WALLET.WALLET_REFUND, payload);
     return resp.data?.data;
   }
 
