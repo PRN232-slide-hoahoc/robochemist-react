@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { StaffLayout } from '@/components/layout/StaffLayout';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 
 // Lazy load pages
 const HomePage = lazy(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -19,6 +20,10 @@ const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ defa
 const StaffDashboard = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.StaffDashboard })));
 const TemplateManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.TemplateManagement })));
 const OrderManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.OrderManagement })));
+
+// Admin pages
+const AdminDashboard = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminDashboard })));
+const AdminSlideManagement = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminSlideManagement })));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -53,6 +58,19 @@ function App() {
               <Route index element={<StaffDashboard />} />
               <Route path="templates" element={<TemplateManagement />} />
               <Route path="orders" element={<OrderManagement />} />
+            </Route>
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<AdminDashboard />} />
+              <Route path="slides" element={<AdminSlideManagement />} />
             </Route>
             
             <Route path="*" element={<NotFoundPage />} />

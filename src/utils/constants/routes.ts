@@ -8,6 +8,9 @@ export const ROUTES = {
   REGISTER: '/register',
   PROFILE: '/profile',
   WALLET: '/wallet',
+  SLIDES: '/slides',
+  STAFF: '/staff',
+  ADMIN: '/admin',
   NOT_FOUND: '/404',
 } as const;
 

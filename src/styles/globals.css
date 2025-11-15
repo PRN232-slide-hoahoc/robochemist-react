@@ -67,5 +67,25 @@
                  0 0 20px rgba(96, 165, 250, 0.3),
                  0 0 30px rgba(96, 165, 250, 0.2);
   }
+
+  /* Animation utilities */
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .hover\:scale-102:hover {
+    transform: scale(1.02);
+  }
 }
 
