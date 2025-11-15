@@ -12,7 +12,7 @@ export interface User {
   updatedAt?: Date;
 }
 
-export type UserRole = 'admin' | 'user' | 'guest';
+export type UserRole = 'admin' | 'staff' | 'user' | 'guest';
 export type UserId = string;
 
 /**

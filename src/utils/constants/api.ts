@@ -39,7 +39,8 @@ export const API_ENDPOINTS = {
     FILES_UPLOAD: '/template/v1/files/upload',
     FILES_DOWNLOAD: '/template/v1/files/download',
     FILES_DELETE: '/template/v1/files',
-    TEMPLATES: '/template/v1/templates',
+    TEMPLATES: '/template/v1/templates', // Returns only ACTIVE templates
+    TEMPLATES_STAFF: '/template/v1/templates/staff', // Returns ALL templates (including inactive) for Staff/Admin
     TEMPLATE_BY_ID: (id: string) => `/template/v1/templates/${id}`,
     TEMPLATE_DOWNLOAD: (id: string) => `/template/v1/templates/${id}/download`,
     TEMPLATE_UPLOAD: '/template/v1/templates/upload',

@@ -34,8 +34,6 @@ export const LoginForm: React.FC = () => {
   const [formError, setFormError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
-  const [showCaptcha, setShowCaptcha] = useState(false);
-  const [pendingRegisterData, setPendingRegisterData] = useState<RegisterFormData | null>(null);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
   // Only require / render reCAPTCHA when a site key is configured
   const requireRecaptcha = Boolean(RECAPTCHA_CONFIG.SITE_KEY);
@@ -81,18 +79,12 @@ export const LoginForm: React.FC = () => {
     setFormError('');
     setSuccessMessage('');
     
-    // Nếu cần reCAPTCHA và chưa verify, hiển thị captcha
+    // Kiểm tra reCAPTCHA (chỉ khi cấu hình site key)
     if (requireRecaptcha && !recaptchaToken) {
-      setPendingRegisterData(data);
-      setShowCaptcha(true);
+      setFormError('Vui lòng xác nhận bạn không phải là robot.');
       return;
     }
     
-    // Thực hiện đăng ký
-    await performRegister(data);
-  };
-
-  const performRegister = async (data: RegisterFormData) => {
     try {
       const { confirmPassword, ...registerData } = data;
       await register(registerData);
@@ -100,8 +92,6 @@ export const LoginForm: React.FC = () => {
       setIsSignUp(false);
       setSuccessMessage('Đăng ký thành công! Vui lòng đăng nhập.');
       registerForm.reset();
-      setShowCaptcha(false);
-      setPendingRegisterData(null);
       // Reset reCAPTCHA
       if (recaptchaRef.current) {
         recaptchaRef.current.reset();
@@ -113,8 +103,6 @@ export const LoginForm: React.FC = () => {
                           err.message || 
                           'Đăng ký thất bại. Vui lòng thử lại.';
       setFormError(errorMessage);
-      setShowCaptcha(false);
-      setPendingRegisterData(null);
       // Reset reCAPTCHA khi có lỗi
       if (recaptchaRef.current) {
         recaptchaRef.current.reset();
@@ -128,26 +116,12 @@ export const LoginForm: React.FC = () => {
     setFormError('');
     setSuccessMessage('');
     setRecaptchaToken(null);
-    setShowCaptcha(false);
-    setPendingRegisterData(null);
     loginForm.reset();
     registerForm.reset();
     // Reset reCAPTCHA khi chuyển form
-    if (recaptchaRef.current) {
+    if (requireRecaptcha && recaptchaRef.current) {
       recaptchaRef.current.reset();
     }
-  };
-
-  const handleCaptchaChange = (token: string | null) => {
-    setRecaptchaToken(token);
-    if (token && pendingRegisterData) {
-      // Auto-submit khi verify captcha thành công
-      performRegister(pendingRegisterData);
-    }
-  };
-
-  const handleCaptchaExpired = () => {
-    setRecaptchaToken(null);
   };
 
   const isLoading = loginLoading || registerLoading;
@@ -421,6 +395,30 @@ export const LoginForm: React.FC = () => {
                 </div>
               )}
 
+              {/* reCAPTCHA (Register Only) */}
+              {isSignUp && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex justify-center"
+                >
+                  {/* Render reCAPTCHA only when a site key is configured */}
+                  {requireRecaptcha ? (
+                    <div className="scale-90 origin-center">
+                      <ReCAPTCHA
+                        ref={recaptchaRef}
+                        sitekey={RECAPTCHA_CONFIG.SITE_KEY}
+                        onChange={(token) => setRecaptchaToken(token)}
+                        onExpired={() => setRecaptchaToken(null)}
+                        theme="dark"
+                      />
+                    </div>
+                  ) : null}
+                </motion.div>
+              )}
+
               {/* Submit Button */}
               <div>
                 <button
@@ -460,65 +458,6 @@ export const LoginForm: React.FC = () => {
             </button>
           </motion.div>
         </motion.div>
-
-        {/* reCAPTCHA Modal - Hiển thị khi bấm đăng ký */}
-        <AnimatePresence>
-          {showCaptcha && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
-              onClick={() => {
-                setShowCaptcha(false);
-                setPendingRegisterData(null);
-              }}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <h3 className="text-xl font-bold text-white mb-4 text-center">
-                  Xác thực bảo mật
-                </h3>
-                <p className="text-slate-300 text-sm mb-6 text-center">
-                  Vui lòng xác nhận bạn không phải là robot
-                </p>
-                
-                <div className="flex justify-center mb-4">
-                  {requireRecaptcha && (
-                    <ReCAPTCHA
-                      ref={recaptchaRef}
-                      sitekey={RECAPTCHA_CONFIG.SITE_KEY}
-                      onChange={handleCaptchaChange}
-                      onExpired={handleCaptchaExpired}
-                      theme="dark"
-                    />
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCaptcha(false);
-                    setPendingRegisterData(null);
-                    if (recaptchaRef.current) {
-                      recaptchaRef.current.reset();
-                    }
-                  }}
-                  className="w-full py-2 px-4 bg-white/5 hover:bg-white/10 border border-white/20 text-white rounded-lg transition-all"
-                >
-                  Hủy
-                </button>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </motion.div>
   );
