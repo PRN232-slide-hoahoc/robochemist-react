@@ -29,6 +29,9 @@ export const API_ENDPOINTS = {
     GRADE_BY_ID: (id: string) => `/slides/v1/grades/${id}`,
     GENERATE: '/slides/v1/slides/generate',
     ME: '/slides/v1/slides/me',
+    ALL: '/slides/v1/slides', // Admin get all slides
+    SLIDE_BY_ID: (id: string) => `/slides/v1/slides/${id}`,
+    SLIDE_DOWNLOAD: (id: string) => `/slides/v1/slides/${id}/download`,
     SYLLABUSES: '/slides/v1/syllabuses',
     SYLLABUS_BY_ID: (id: string) => `/slides/v1/syllabuses/${id}`,
     SYLLABUS_TOGGLE_STATUS: (id: string) => `/slides/v1/syllabuses/${id}/toggle-status`,
