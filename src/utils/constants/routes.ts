@@ -9,6 +9,9 @@ export const ROUTES = {
   PROFILE: '/profile',
   WALLET: '/wallet',
   PAYMENT_CALLBACK: '/payment/callback',
+  SLIDES: '/slides',
+  STAFF: '/staff',
+  ADMIN: '/admin',
   NOT_FOUND: '/404',
 } as const;
 

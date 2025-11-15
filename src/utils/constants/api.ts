@@ -15,9 +15,9 @@ export const API_ENDPOINTS = {
     REQUEST: '/exam/v1/exams/request',
     REQUEST_BY_ID: (id: string) => `/exam/v1/exams/request/${id}`,
     REQUEST_BY_USER: (userId: string) => `/exam/v1/exams/request/user/${userId}`,
-    GENERATE: (examRequestId: string) => `/exam/v1/exams/generate/${examRequestId}`,
     EXAM_BY_ID: (id: string) => `/exam/v1/exams/${id}`,
     EXAM_STATUS: (id: string) => `/exam/v1/exams/${id}/status`,
+    EXAM_EXPORT_WORD: (examId: string) => `/exam/v1/exams/${examId}/export/word`,
     MATRICES_BASE: '/exam/v1/matrices',
     MATRIX_BY_ID: (id: string) => `/exam/v1/matrices/${id}`,
     QUESTIONS_BULK: '/exam/v1/questions/bulk',
@@ -29,6 +29,9 @@ export const API_ENDPOINTS = {
     GRADE_BY_ID: (id: string) => `/slides/v1/grades/${id}`,
     GENERATE: '/slides/v1/slides/generate',
     ME: '/slides/v1/slides/me',
+    ALL: '/slides/v1/slides', // Admin get all slides
+    SLIDE_BY_ID: (id: string) => `/slides/v1/slides/${id}`,
+    SLIDE_DOWNLOAD: (id: string) => `/slides/v1/slides/${id}/download`,
     SYLLABUSES: '/slides/v1/syllabuses',
     SYLLABUS_BY_ID: (id: string) => `/slides/v1/syllabuses/${id}`,
     SYLLABUS_TOGGLE_STATUS: (id: string) => `/slides/v1/syllabuses/${id}/toggle-status`,
@@ -39,7 +42,8 @@ export const API_ENDPOINTS = {
     FILES_UPLOAD: '/template/v1/files/upload',
     FILES_DOWNLOAD: '/template/v1/files/download',
     FILES_DELETE: '/template/v1/files',
-    TEMPLATES: '/template/v1/templates',
+    TEMPLATES: '/template/v1/templates', // Returns only ACTIVE templates
+    TEMPLATES_STAFF: '/template/v1/templates/staff', // Returns ALL templates (including inactive) for Staff/Admin
     TEMPLATE_BY_ID: (id: string) => `/template/v1/templates/${id}`,
     TEMPLATE_DOWNLOAD: (id: string) => `/template/v1/templates/${id}/download`,
     TEMPLATE_UPLOAD: '/template/v1/templates/upload',

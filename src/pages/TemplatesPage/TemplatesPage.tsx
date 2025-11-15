@@ -13,7 +13,6 @@ export const TemplatesPage: React.FC = () => {
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [templateName, setTemplateName] = useState<string>('');
-  const [templateType, setTemplateType] = useState<string>('presentation');
   const [description, setDescription] = useState<string>('');
   const [slideCount, setSlideCount] = useState<number | ''>('');
   const [isPremium, setIsPremium] = useState<boolean>(false);
@@ -75,15 +74,10 @@ export const TemplatesPage: React.FC = () => {
       alert('Template name is required');
       return;
     }
-    if (!templateType) {
-      alert('Template type is required');
-      return;
-    }
 
   const form = new FormData();
   form.append('File', file);
     form.append('TemplateName', templateName);
-    form.append('TemplateType', templateType);
     if (description) form.append('Description', description);
     if (slideCount !== '') form.append('SlideCount', String(slideCount));
     form.append('IsPremium', String(isPremium));
@@ -104,7 +98,6 @@ export const TemplatesPage: React.FC = () => {
       setTemplates(Array.isArray(data) ? data : []);
   // reset form
       setTemplateName('');
-      setTemplateType('presentation');
       setDescription('');
       setSlideCount('');
       setIsPremium(false);
@@ -155,11 +148,6 @@ export const TemplatesPage: React.FC = () => {
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
               />
-              <select className="rounded-lg border px-3 py-2" value={templateType} onChange={(e) => setTemplateType(e.target.value)}>
-                <option value="presentation">Presentation</option>
-                <option value="lesson">Lesson</option>
-                <option value="exam">Exam</option>
-              </select>
               <input className="rounded-lg border px-3 py-2" placeholder="Số slide (tuỳ chọn)" value={slideCount === '' ? '' : String(slideCount)} onChange={(e) => setSlideCount(e.target.value === '' ? '' : Number(e.target.value))} />
               <div className="flex items-center gap-2">
                 <input id="isPremium" type="checkbox" checked={isPremium} onChange={(e) => setIsPremium(e.target.checked)} />

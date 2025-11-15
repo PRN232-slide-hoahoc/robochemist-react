@@ -2,74 +2,155 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { Container } from '@/components/layout/Container';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { axiosInstance } from '@/services/api/axios.config';
-import { endpoints } from '@/services/api/endpoints';
-
-type SyllabusItem = { id: string; lesson: string; topicName?: string };
-type SlideResult = {
-  generatedSlideId: string;
-  filePath?: string | null;
-  slideCount?: number | null;
-  generationStatus?: string | null;
-  jsonContent?: string | null;
-};
+import slideService, {
+  Grade,
+  Topic,
+  Syllabus,
+  Template,
+  GenerateSlideResponse,
+} from '@/services/api/slideService';
 
 export const SlidesPage: React.FC = () => {
   const navigate = useNavigate();
-  const [syllabuses, setSyllabuses] = useState<SyllabusItem[]>([]);
-  const [selectedSyllabus, setSelectedSyllabus] = useState<string | null>(null);
+
+  // Data lists
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [syllabuses, setSyllabuses] = useState<Syllabus[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+
+  // Selected values
+  const [selectedGrade, setSelectedGrade] = useState<string>('');
+  const [selectedTopic, setSelectedTopic] = useState<string>('');
+  const [selectedSyllabus, setSelectedSyllabus] = useState<string>('');
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+
+  // Form inputs
   const [numberOfSlides, setNumberOfSlides] = useState<number>(10);
   const [aiPrompt, setAiPrompt] = useState<string>('');
+
+  // UI states
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<SlideResult | null>(null);
+  const [loadingGrades, setLoadingGrades] = useState(false);
+  const [loadingTopics, setLoadingTopics] = useState(false);
+  const [loadingSyllabuses, setLoadingSyllabuses] = useState(false);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [result, setResult] = useState<GenerateSlideResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Load grades on mount
   useEffect(() => {
-    const fetchSyllabuses = async () => {
+    const fetchGrades = async () => {
+      setLoadingGrades(true);
       try {
-        const resp = await axiosInstance.get(endpoints.SLIDES.SYLLABUSES);
-        const data = resp.data?.data ?? resp.data;
-        if (Array.isArray(data)) {
-          setSyllabuses(data.map((s: any) => ({ id: s.id ?? s.id?.toString(), lesson: s.lesson ?? s.lesson, topicName: s.topicName ?? s.topic?.name })));
-        }
+        const data = await slideService.getGrades();
+        setGrades(Array.isArray(data) ? data : []);
       } catch (err) {
-        // ignore - show empty list
+        console.error('Failed to load grades:', err);
+        setGrades([]);
+      } finally {
+        setLoadingGrades(false);
+      }
+    };
+
+    fetchGrades();
+  }, []);
+
+  // Load templates on mount
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const data = await slideService.getTemplates();
+        setTemplates(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Failed to load templates:', err);
+        setTemplates([]);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
+
+  // Load topics when grade changes
+  useEffect(() => {
+    if (!selectedGrade) {
+      setTopics([]);
+      setSelectedTopic('');
+      setSyllabuses([]);
+      setSelectedSyllabus('');
+      return;
+    }
+
+    const fetchTopics = async () => {
+      setLoadingTopics(true);
+      try {
+        const data = await slideService.getTopicsByGrade(selectedGrade);
+        setTopics(Array.isArray(data) ? data : []);
+        // Reset topic and syllabus selection
+        setSelectedTopic('');
+        setSyllabuses([]);
+        setSelectedSyllabus('');
+      } catch (err) {
+        console.error('Failed to load topics:', err);
+        setTopics([]);
+      } finally {
+        setLoadingTopics(false);
+      }
+    };
+
+    fetchTopics();
+  }, [selectedGrade]);
+
+  // Load syllabuses when topic changes
+  useEffect(() => {
+    if (!selectedTopic) {
+      setSyllabuses([]);
+      setSelectedSyllabus('');
+      return;
+    }
+
+    const fetchSyllabuses = async () => {
+      setLoadingSyllabuses(true);
+      try {
+        const data = await slideService.getSyllabuses(selectedTopic);
+        setSyllabuses(Array.isArray(data) ? data : []);
+        // Reset syllabus selection
+        setSelectedSyllabus('');
+      } catch (err) {
+        console.error('Failed to load syllabuses:', err);
+        setSyllabuses([]);
+      } finally {
+        setLoadingSyllabuses(false);
       }
     };
 
     fetchSyllabuses();
-  }, []);
+  }, [selectedTopic]);
 
   const handleGenerate = async () => {
     if (!selectedSyllabus) {
-      setError('Vui lòng chọn một syllabus');
+      setError('Vui lòng chọn đầy đủ: Khối → Chủ đề → Bài học');
       return;
     }
 
     setError(null);
     setLoading(true);
     setResult(null);
+    
     try {
-      const payload = {
-        SyllabusId: selectedSyllabus,
-        NumberOfSlides: numberOfSlides,
-        AiPrompt: aiPrompt || undefined,
-      };
+      const response = await slideService.generateSlide({
+        syllabusId: selectedSyllabus,
+        numberOfSlides,
+        aiPrompt: aiPrompt || undefined,
+        templateId: selectedTemplate || undefined,
+      });
 
-      const resp = await axiosInstance.post(endpoints.SLIDES.GENERATE, payload);
-      const data = resp.data?.data ?? resp.data;
-      if (data) {
-        setResult({
-          generatedSlideId: data.generatedSlideId ?? data.GeneratedSlideId ?? '',
-          filePath: data.filePath ?? data.FilePath,
-          slideCount: data.slideCount ?? data.SlideCount,
-          generationStatus: data.generationStatus ?? data.GenerationStatus,
-          jsonContent: data.jsonContent ?? data.JsonContent,
-        });
-      }
+      setResult(response);
     } catch (err: any) {
       setError(err?.response?.data?.message || err.message || 'Tạo slide thất bại');
     } finally {
@@ -79,64 +160,447 @@ export const SlidesPage: React.FC = () => {
 
   return (
     <Layout>
-      <Container className="py-12">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Slides</h1>
-          <p className="text-sm text-gray-600">Soạn slide nhanh chóng bằng AI hoặc template.</p>
+      <Container className="py-10">
+        {/* Header with gradient */}
+        <div className="mb-10 text-center">
+          <div className="inline-block mb-4">
+            <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
+              ✨ AI Slide Generator
+            </div>
+          </div>
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-3 bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
+            Tạo Slide Hóa Học
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Chọn khối lớp, chủ đề, bài học và để AI tạo slide chuyên nghiệp cho bạn
+          </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Tạo slide</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Chọn syllabus</label>
-                <select className="w-full rounded-lg border px-3 py-2 mt-1" value={selectedSyllabus ?? ''} onChange={(e) => setSelectedSyllabus(e.target.value || null)}>
-                  <option value="">-- Chọn syllabus --</option>
-                  {syllabuses.map((s) => (
-                    <option key={s.id} value={s.id}>{s.lesson}{s.topicName ? ` — ${s.topicName}` : ''}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <Input label="Số lượng slide" type="number" value={numberOfSlides} onChange={(e) => setNumberOfSlides(Number(e.target.value))} />
-              </div>
-
-              <div>
-                <Input label="Prompt (tùy chọn)" value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} helperText="Tùy chỉnh prompt cho AI (nếu để trống, hệ thống dùng nội dung syllabus)." />
-              </div>
-
-              <div className="flex gap-2">
-                <Button onClick={handleGenerate} disabled={loading}>{loading ? 'Đang tạo...' : 'Tạo slide'}</Button>
-                <Button variant="outline" onClick={() => navigate('/')}>Quay lại Home</Button>
-              </div>
-
-              {error && <p className="text-red-500">{error}</p>}
-
-              {result && (
-                <div className="mt-4">
-                  <h4 className="font-semibold">Kết quả</h4>
-                  <p>Trạng thái: {result.generationStatus ?? '—'}</p>
-                  <p>Số slide: {result.slideCount ?? '—'}</p>
-                  {result.filePath && (
-                    <div className="mt-2">
-                      <a className="text-blue-600 underline" href={result.filePath} target="_blank" rel="noreferrer">Tải file slide</a>
-                    </div>
-                  )}
-                  {result.jsonContent && (
-                    <details className="mt-2">
-                      <summary className="cursor-pointer">Xem nội dung JSON</summary>
-                      <pre className="max-h-64 overflow-auto p-2 bg-gray-100 rounded mt-2 text-xs">{result.jsonContent}</pre>
-                    </details>
-                  )}
-                </div>
-              )}
+        {/* Step 1: Select Grade */}
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-primary-600 to-primary-700 text-white font-bold text-base shadow-lg">
+              1
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Chọn khối lớp</h2>
+              <p className="text-sm text-gray-500">Chọn khối lớp học phù hợp</p>
+            </div>
+          </div>
+
+          {loadingGrades ? (
+            <div className="text-center py-16">
+              <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent"></div>
+              <p className="mt-3 text-gray-600 font-medium">Đang tải khối lớp...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {grades.map((grade) => (
+                <div
+                  key={grade.id}
+                  onClick={() => setSelectedGrade(grade.id)}
+                  className={`group cursor-pointer rounded-2xl border-2 p-6 transition-all duration-300 ${
+                    selectedGrade === grade.id
+                      ? 'border-primary-600 bg-gradient-to-br from-primary-50 to-primary-100 shadow-xl scale-105'
+                      : 'border-gray-200 bg-white hover:border-primary-400 hover:shadow-lg hover:scale-102'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className={`text-xl font-bold ${selectedGrade === grade.id ? 'text-primary-700' : 'text-gray-900 group-hover:text-primary-600'}`}>
+                        {grade.name}
+                      </h3>
+                      {grade.description && (
+                        <p className="text-sm text-gray-600 mt-2 line-clamp-2">{grade.description}</p>
+                      )}
+                    </div>
+                    {selectedGrade === grade.id && (
+                      <div className="flex-shrink-0 ml-3">
+                        <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center animate-bounce">
+                          <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Step 2: Select Topic */}
+        {selectedGrade && (
+          <div className="mb-10 animate-fadeIn">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-primary-600 to-primary-700 text-white font-bold text-base shadow-lg">
+                2
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Chọn chủ đề</h2>
+                <p className="text-sm text-gray-500">Chọn chương học bạn muốn tạo slide</p>
+              </div>
+            </div>
+
+            {loadingTopics ? (
+              <div className="text-center py-16">
+                <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent"></div>
+                <p className="mt-3 text-gray-600 font-medium">Đang tải chủ đề...</p>
+              </div>
+            ) : topics.length === 0 ? (
+              <div className="text-center py-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300">
+                <svg className="w-16 h-16 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-gray-600 font-medium">Không có chủ đề nào cho khối lớp này</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {topics.map((topic) => (
+                  <div
+                    key={topic.id}
+                    onClick={() => setSelectedTopic(topic.id)}
+                    className={`group cursor-pointer rounded-xl border-2 p-5 transition-all duration-300 ${
+                      selectedTopic === topic.id
+                        ? 'border-primary-600 bg-gradient-to-br from-primary-50 to-primary-100 shadow-lg scale-102'
+                        : 'border-gray-200 bg-white hover:border-primary-400 hover:shadow-md hover:-translate-y-1'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className={`text-base font-semibold ${selectedTopic === topic.id ? 'text-primary-700' : 'text-gray-900 group-hover:text-primary-600'}`}>
+                          {topic.sortOrder && (
+                            <span className={`inline-block px-3 py-1 rounded-lg text-sm font-bold mr-2 ${
+                              selectedTopic === topic.id
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 group-hover:from-primary-100 group-hover:to-primary-200 group-hover:text-primary-700'
+                            }`}>
+                              Chương {topic.sortOrder}
+                            </span>
+                          )}
+                          {topic.name}
+                        </h3>
+                      </div>
+                      {selectedTopic === topic.id && (
+                        <div className="flex-shrink-0 ml-3">
+                          <div className="w-7 h-7 rounded-full bg-primary-600 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 3: Select Syllabus */}
+        {selectedTopic && (
+          <div className="mb-10 animate-fadeIn">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-primary-600 to-primary-700 text-white font-bold text-base shadow-lg">
+                3
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Chọn bài học</h2>
+                <p className="text-sm text-gray-500">Chọn bài học cụ thể để tạo slide</p>
+              </div>
+            </div>
+
+            {loadingSyllabuses ? (
+              <div className="text-center py-16">
+                <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent"></div>
+                <p className="mt-3 text-gray-600 font-medium">Đang tải bài học...</p>
+              </div>
+            ) : syllabuses.length === 0 ? (
+              <div className="text-center py-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300">
+                <svg className="w-16 h-16 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <p className="text-gray-600 font-medium">Không có bài học nào cho chủ đề này</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {syllabuses.map((syllabus, index) => (
+                  <div
+                    key={syllabus.id}
+                    onClick={() => setSelectedSyllabus(syllabus.id)}
+                    className={`group cursor-pointer rounded-2xl border-2 p-6 transition-all duration-300 ${
+                      selectedSyllabus === syllabus.id
+                        ? 'border-primary-600 bg-gradient-to-br from-primary-50 to-primary-100 shadow-xl scale-105'
+                        : 'border-gray-200 bg-white hover:border-primary-400 hover:shadow-lg hover:scale-102'
+                    }`}
+                    style={{ transitionDelay: `${index * 30}ms` }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="mb-3">
+                          <span className={`inline-block px-3 py-1.5 rounded-lg text-sm font-bold ${
+                            selectedSyllabus === syllabus.id 
+                              ? 'bg-primary-600 text-white shadow-md' 
+                              : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 group-hover:from-primary-100 group-hover:to-primary-200 group-hover:text-primary-700'
+                          }`}>
+                            Bài {syllabus.lessonOrder || index + 1}
+                          </span>
+                        </div>
+                        <h3 className={`text-base font-semibold leading-snug ${
+                          selectedSyllabus === syllabus.id 
+                            ? 'text-primary-700' 
+                            : 'text-gray-900 group-hover:text-primary-600'
+                        }`}>
+                          {syllabus.lesson}
+                        </h3>
+                      </div>
+                      {selectedSyllabus === syllabus.id && (
+                        <div className="flex-shrink-0 ml-3">
+                          <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center animate-bounce">
+                            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 4: Configuration */}
+        {selectedSyllabus && (
+          <div className="mb-10 animate-fadeIn">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-primary-600 to-primary-700 text-white font-bold text-base shadow-lg">
+                4
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Cấu hình slide</h2>
+                <p className="text-sm text-gray-500">Tùy chỉnh template và nội dung slide</p>
+              </div>
+            </div>
+
+            <Card className="border-2 border-gray-200 shadow-lg">
+              <CardContent className="p-8">
+                <div className="space-y-6">
+                  {/* Template Selection */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <span className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                        </svg>
+                        Template PowerPoint
+                      </span>
+                    </label>
+                    <select
+                      className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                      value={selectedTemplate}
+                      onChange={(e) => setSelectedTemplate(e.target.value)}
+                      disabled={loadingTemplates}
+                    >
+                      <option value="">
+                        {loadingTemplates ? 'Đang tải...' : '🎨 Sử dụng template mặc định'}
+                      </option>
+                      {templates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          📄 {template.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      Template mặc định sẽ được sử dụng nếu bạn không chọn
+                    </p>
+                  </div>
+
+                  {/* Number of Slides */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <span className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        Số lượng slide
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={numberOfSlides}
+                      onChange={(e) => setNumberOfSlides(Number(e.target.value))}
+                      className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 text-lg font-semibold focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                    />
+                    <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      Khuyến nghị: 10-20 slide cho một bài học
+                    </p>
+                  </div>
+
+                  {/* AI Prompt */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <span className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Yêu cầu bổ sung cho AI
+                      </span>
+                    </label>
+                    <textarea
+                      className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
+                      rows={4}
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      placeholder="Ví dụ: Thêm nhiều hình ảnh minh họa, giải thích đơn giản dễ hiểu cho học sinh, bổ sung ví dụ thực tế..."
+                    />
+                    <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      AI sẽ tự động tạo nội dung nếu bạn để trống
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-4 pt-4">
+                    <Button
+                      onClick={handleGenerate}
+                      disabled={loading}
+                      className="flex-1 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+                    >
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-3">
+                          <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Đang tạo slide...
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                          Tạo Slide
+                        </span>
+                      )}
+                    </Button>
+                    <Button variant="outline" onClick={() => navigate('/')} className="px-8 py-4 text-base font-semibold border-2">
+                      Hủy
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-8 rounded-2xl bg-red-50 border-2 border-red-300 p-6 shadow-lg animate-fadeIn">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-lg font-bold text-red-800 mb-1">Có lỗi xảy ra</h4>
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Result */}
+        {result && (
+          <div className="mb-8 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 p-8 shadow-xl animate-fadeIn">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-lg animate-bounce">
+                  <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-2xl font-bold text-green-800 mb-2">Tạo slide thành công! 🎉</h4>
+                <p className="text-base text-green-700">Slide của bạn đã được tạo và sẵn sàng để tải xuống</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 mb-4 shadow-inner">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Trạng thái</p>
+                    <p className="text-sm font-bold text-gray-900">{result.generationStatus ?? 'Hoàn thành'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Số slide</p>
+                    <p className="text-sm font-bold text-gray-900">{result.slideCount ?? numberOfSlides}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+              
+            {result.filePath && (
+              <div className="mb-4">
+                <a
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-xl hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  href={result.filePath}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Tải file slide (.pptx)
+                </a>
+              </div>
+            )}
+              
+            {result.jsonContent && (
+              <details className="group">
+                <summary className="cursor-pointer text-sm font-semibold text-green-800 hover:text-green-900 select-none flex items-center gap-2 py-2">
+                  <svg className="w-5 h-5 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  Xem nội dung JSON
+                </summary>
+                <pre className="max-h-64 overflow-auto p-4 bg-gray-900 text-green-400 rounded-xl mt-3 text-xs font-mono shadow-inner">
+                  {result.jsonContent}
+                </pre>
+              </details>
+            )}
+          </div>
+        )}
       </Container>
     </Layout>
   );

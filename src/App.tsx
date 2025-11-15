@@ -2,6 +2,9 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { StaffLayout } from '@/components/layout/StaffLayout';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 
 // Lazy load pages
 const HomePage = lazy(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -13,6 +16,15 @@ const TemplatesPage = lazy(() => import('@/pages/TemplatesPage/TemplatesPage').t
 const SlidesPage = lazy(() => import('@/pages/SlidesPage/SlidesPage').then(m => ({ default: m.SlidesPage })));
 const ExamsPage = lazy(() => import('@/pages/ExamsPage/ExamsPage').then(m => ({ default: m.ExamsPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+
+// Staff pages
+const StaffDashboard = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.StaffDashboard })));
+const TemplateManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.TemplateManagement })));
+const OrderManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.OrderManagement })));
+
+// Admin pages
+const AdminDashboard = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminDashboard })));
+const AdminSlideManagement = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminSlideManagement })));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -35,6 +47,34 @@ function App() {
             <Route path="/templates" element={<TemplatesPage />} />
             <Route path="/slides" element={<SlidesPage />} />
             <Route path="/exams" element={<ExamsPage />} />
+            
+            {/* Staff Routes */}
+            <Route
+              path="/staff"
+              element={
+                <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                  <StaffLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<StaffDashboard />} />
+              <Route path="templates" element={<TemplateManagement />} />
+              <Route path="orders" element={<OrderManagement />} />
+            </Route>
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<AdminDashboard />} />
+              <Route path="slides" element={<AdminSlideManagement />} />
+            </Route>
+            
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>

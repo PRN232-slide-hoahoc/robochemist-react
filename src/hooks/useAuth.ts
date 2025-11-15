@@ -15,8 +15,27 @@ export const useLogin = () => {
     try {
       const data = await authService.login(credentials);
       setToken(data.token);
-      setUser({ id: data.userId, fullname: data.fullname, email: data.email });
-      navigate('/dashboard');
+      
+      // Get full user info including role from backend
+      const userInfo = await authService.getCurrentUser();
+      
+      setUser(userInfo);
+      
+      // Redirect based on role
+      const userRole = userInfo.role?.toLowerCase();
+      
+      switch (userRole) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'staff':
+          navigate('/staff');
+          break;
+        case 'user':
+        default:
+          navigate('/');
+          break;
+      }
     } catch (err: any) {
       throw err;
     } finally {
