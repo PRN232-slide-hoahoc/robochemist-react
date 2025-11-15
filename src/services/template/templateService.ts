@@ -30,7 +30,6 @@ export const templateService = {
     if (filters?.searchTerm) params.append('searchTerm', filters.searchTerm);
     if (filters?.sortBy) params.append('sortBy', filters.sortBy);
     if (filters?.sortDescending !== undefined) params.append('sortDescending', filters.sortDescending.toString());
-    if (filters?.templateType) params.append('templateType', filters.templateType);
     if (filters?.isPremium !== undefined) params.append('isPremium', filters.isPremium.toString());
     if (filters?.isActive !== undefined) params.append('isActive', filters.isActive.toString());
     if (filters?.minPrice !== undefined) params.append('minPrice', filters.minPrice.toString());
@@ -54,7 +53,6 @@ export const templateService = {
     if (filters?.searchTerm) params.append('searchTerm', filters.searchTerm);
     if (filters?.sortBy) params.append('sortBy', filters.sortBy);
     if (filters?.sortDescending !== undefined) params.append('sortDescending', filters.sortDescending.toString());
-    if (filters?.templateType) params.append('templateType', filters.templateType);
     if (filters?.isPremium !== undefined) params.append('isPremium', filters.isPremium.toString());
     // Note: isActive filter is ignored on backend for staff endpoint
     if (filters?.minPrice !== undefined) params.append('minPrice', filters.minPrice.toString());
@@ -83,10 +81,14 @@ export const templateService = {
     const formData = new FormData();
     formData.append('file', request.file);
     formData.append('templateName', request.templateName);
+    formData.append('slideCount', (request.slideCount || 0).toString());
     formData.append('isPremium', request.isPremium.toString());
     formData.append('price', request.price.toString());
     if (request.description) {
       formData.append('description', request.description);
+    }
+    if (request.thumbnailFile) {
+      formData.append('thumbnailFile', request.thumbnailFile);
     }
 
     const response = await apiClient.post<ApiResponse<UploadTemplateResponse>>(
@@ -176,16 +178,6 @@ export const templateService = {
     const response = await apiClient.post<ApiResponse<UserTemplate>>(
       `${USER_TEMPLATE_API_BASE}`,
       request
-    );
-    return response.data.data;
-  },
-
-  /**
-   * Increment template usage count
-   */
-  async incrementTemplateUsage(templateId: string): Promise<UserTemplate> {
-    const response = await apiClient.post<ApiResponse<UserTemplate>>(
-      `${USER_TEMPLATE_API_BASE}/${templateId}/usage`
     );
     return response.data.data;
   },

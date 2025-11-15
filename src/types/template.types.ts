@@ -6,7 +6,6 @@ export interface Template {
   templateId: string;
   objectKey: string;
   templateName: string;
-  templateType: string;
   description?: string;
   thumbnailUrl?: string;
   previewUrl?: string;
@@ -24,26 +23,29 @@ export interface Template {
 }
 
 export interface UserTemplate {
-  userTemplateId: string;
-  userId: string;
   templateId: string;
+  objectKey: string;
   templateName: string;
-  templateType: string;
-  accessType: string;
-  acquiredAt: string;
-  expiresAt?: string;
-  usageCount: number;
-  usageLimit?: number;
-  isActive: boolean;
-  isExpired: boolean;
-  hasReachedLimit: boolean;
+  description?: string;
+  thumbnailUrl?: string;
+  previewUrl?: string;
+  contentStructure?: string;
+  slideCount: number;
+  isPremium: boolean;
+  price: number;
+  downloadCount: number;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  version: number;
 }
 
 export interface UploadTemplateRequest {
   file: File;
+  thumbnailFile?: File; // Optional thumbnail image
   templateName: string;
-  templateType: string;
   description?: string;
+  slideCount?: number; // Optional - backend defaults to 0
   isPremium: boolean;
   price: number;
 }
@@ -57,9 +59,6 @@ export interface UploadTemplateResponse {
 
 export interface GrantTemplateAccessRequest {
   templateId: string;
-  accessType: 'free' | 'purchased' | 'subscription';
-  expiresAt?: string;
-  usageLimit?: number;
 }
 
 export interface PagedResult<T> {
@@ -81,7 +80,6 @@ export interface PaginationParams {
 }
 
 export interface TemplateFilters extends PaginationParams {
-  templateType?: string;
   isPremium?: boolean;
   isActive?: boolean;
   minPrice?: number;

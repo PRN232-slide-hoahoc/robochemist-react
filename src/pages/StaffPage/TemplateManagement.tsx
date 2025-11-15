@@ -52,11 +52,12 @@ export const TemplateManagement: React.FC = () => {
   // Upload form
   const [uploadData, setUploadData] = useState({
     templateName: '',
-    templateType: '',
     description: '',
+    slideCount: 0,
     isPremium: false,
     price: 0,
     file: null as File | null,
+    thumbnailFile: null as File | null,
   });
 
   const fetchTemplates = async () => {
@@ -108,9 +109,10 @@ export const TemplateManagement: React.FC = () => {
       
       await templateService.uploadTemplate({
         file: uploadData.file,
+        thumbnailFile: uploadData.thumbnailFile || undefined,
         templateName: uploadData.templateName,
-        templateType: uploadData.templateType,
         description: uploadData.description,
+        slideCount: uploadData.slideCount,
         isPremium: uploadData.isPremium,
         price: uploadData.price,
       });
@@ -119,11 +121,12 @@ export const TemplateManagement: React.FC = () => {
       setShowUploadModal(false);
       setUploadData({
         templateName: '',
-        templateType: '',
         description: '',
+        slideCount: 0,
         isPremium: false,
         price: 0,
         file: null,
+        thumbnailFile: null,
       });
       fetchTemplates();
     } catch (error: any) {
@@ -169,7 +172,6 @@ export const TemplateManagement: React.FC = () => {
       
       await templateService.updateTemplate(editingTemplate.templateId, {
         templateName: editingTemplate.templateName,
-        templateType: editingTemplate.templateType,
         description: editingTemplate.description,
         slideCount: editingTemplate.slideCount,
         isPremium: editingTemplate.isPremium,
@@ -325,26 +327,105 @@ export const TemplateManagement: React.FC = () => {
 
       {/* Search and Filter Bar */}
       <div className="bg-white rounded-xl p-4 lg:p-6 shadow-sm border border-slate-200">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm template..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
-            />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm template..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={handleSearch}
+                className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                Tìm kiếm
+              </button>
+            </div>
           </div>
-          
-          <div className="flex gap-2">
-            <button
-              onClick={handleSearch}
-              className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md"
-            >
-              Tìm kiếm
-            </button>
+
+          {/* Filter Buttons */}
+          <div className="flex flex-wrap gap-3">
+            {/* Status Filter Group */}
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm font-medium text-slate-600 px-2 py-2">Trạng thái:</span>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, isActive: undefined, pageNumber: 1 }))}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  filters.isActive === undefined
+                    ? 'bg-slate-900 text-white shadow-md'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Tất cả ({totalCount})
+              </button>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, isActive: true, pageNumber: 1 }))}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                  filters.isActive === true
+                    ? 'bg-green-600 text-white shadow-md'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <ToggleRight className="w-4 h-4" />
+                Hoạt động
+              </button>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, isActive: false, pageNumber: 1 }))}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                  filters.isActive === false
+                    ? 'bg-red-600 text-white shadow-md'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <ToggleLeft className="w-4 h-4" />
+                Vô hiệu hóa
+              </button>
+            </div>
+
+            {/* Premium Filter Group */}
+            <div className="flex flex-wrap gap-2 border-l border-slate-300 pl-3">
+              <span className="text-sm font-medium text-slate-600 px-2 py-2">Loại:</span>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, isPremium: undefined, pageNumber: 1 }))}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  filters.isPremium === undefined
+                    ? 'bg-slate-900 text-white shadow-md'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Tất cả
+              </button>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, isPremium: true, pageNumber: 1 }))}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                  filters.isPremium === true
+                    ? 'bg-amber-600 text-white shadow-md'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <DollarSign className="w-4 h-4" />
+                Premium
+              </button>
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, isPremium: false, pageNumber: 1 }))}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                  filters.isPremium === false
+                    ? 'bg-green-600 text-white shadow-md'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                Miễn phí
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -357,9 +438,6 @@ export const TemplateManagement: React.FC = () => {
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                   Tên Template
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Loại
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                   Slides
@@ -422,11 +500,6 @@ export const TemplateManagement: React.FC = () => {
                           )}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-                        {template.templateType}
-                      </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-900">
                       {template.slideCount}
@@ -596,6 +669,33 @@ export const TemplateManagement: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Ảnh Thumbnail
+                </label>
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-slate-400 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setUploadData((prev) => ({
+                        ...prev,
+                        thumbnailFile: e.target.files?.[0] || null,
+                      }))
+                    }
+                    className="w-full"
+                  />
+                  <p className="text-sm text-slate-500 mt-2">
+                    Ảnh đại diện cho template (PNG, JPG, JPEG - Tối đa 5MB)
+                  </p>
+                  {uploadData.thumbnailFile && (
+                    <p className="text-sm text-green-600 mt-1 font-medium">
+                      ✓ {uploadData.thumbnailFile.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Tên Template <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -615,19 +715,20 @@ export const TemplateManagement: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Loại Template <span className="text-red-500">*</span>
+                  Số Slide <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="text"
-                  value={uploadData.templateType}
+                  type="number"
+                  min="1"
+                  value={uploadData.slideCount || ''}
                   onChange={(e) =>
                     setUploadData((prev) => ({
                       ...prev,
-                      templateType: e.target.value,
+                      slideCount: Number(e.target.value),
                     }))
                   }
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  placeholder="VD: Education, Business, Chemistry"
+                  placeholder="Nhập số lượng slide"
                   required
                 />
               </div>
@@ -748,22 +849,6 @@ export const TemplateManagement: React.FC = () => {
                   }
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
                   placeholder="Nhập tên template"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Loại Template <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editingTemplate.templateType}
-                  onChange={(e) =>
-                    setEditingTemplate((prev) => prev ? { ...prev, templateType: e.target.value } : null)
-                  }
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                  placeholder="VD: Education, Business, Chemistry"
                   required
                 />
               </div>
@@ -892,7 +977,7 @@ export const TemplateManagement: React.FC = () => {
                   {previewTemplate.templateName}
                 </h2>
                 <p className="text-sm text-slate-600 mt-1">
-                  {previewTemplate.templateType} • {previewTemplate.slideCount} slides
+                  {previewTemplate.slideCount} slides
                   {previewTemplate.isPremium && (
                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
                       Premium
