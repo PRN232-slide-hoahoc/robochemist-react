@@ -8,6 +8,7 @@ export const ROUTES = {
   REGISTER: '/register',
   PROFILE: '/profile',
   WALLET: '/wallet',
+  PAYMENT_CALLBACK: '/payment/callback',
   NOT_FOUND: '/404',
 } as const;
 
