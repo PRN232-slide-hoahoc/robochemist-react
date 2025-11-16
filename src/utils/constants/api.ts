@@ -57,8 +57,8 @@ export const API_ENDPOINTS = {
     USER_ORDER_STATS: (userId: string) => `/template/v1/orders/user/${userId}/statistics`,
   },
   WALLET: {
-    CREATE_DEPOSIT_URL: '/wallet/v1/payments/create-deposit-url',
-    DEPOSIT_CALLBACK: '/wallet/v1/payments/deposit-callback',
+    CREATE_DEPOSIT_URL: '/wallet/v1/wallet/deposit',
+    DEPOSIT_CALLBACK: '/wallet/v1/wallet/deposit-callback',
     CREATE_PAYMENT_REQUEST: '/wallet/v1/payments/create-payment-request',
     CREATE_REFUND_REQUEST: '/wallet/v1/payments/create-refund-request',
     GET_ALL_TRANSACTIONS: '/wallet/v1/wallet/get-all-transaction',
