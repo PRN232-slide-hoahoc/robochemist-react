@@ -15,20 +15,89 @@ import type {
  * Handles all API calls related to exam functionality
  */
 export class ExamService {
+  private static CACHE_KEY = 'exam_matrices_cache';
+  private static CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
   /**
-   * Get all exam matrices
+   * Get cached matrices from localStorage
    */
-  static async getAllMatrices(): Promise<ExamMatrix[]> {
+  private static getCachedMatrices(): { data: ExamMatrix[]; timestamp: number } | null {
     try {
+      const cached = localStorage.getItem(this.CACHE_KEY);
+      if (!cached) return null;
+      
+      const parsed = JSON.parse(cached);
+      const now = Date.now();
+      
+      // Check if cache is still valid
+      if (now - parsed.timestamp < this.CACHE_DURATION) {
+        console.log('[ExamService] Using cached matrices');
+        return parsed;
+      }
+      
+      // Cache expired
+      localStorage.removeItem(this.CACHE_KEY);
+      return null;
+    } catch (error) {
+      console.error('[ExamService] Error reading cache:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Save matrices to cache
+   */
+  private static setCachedMatrices(matrices: ExamMatrix[]): void {
+    try {
+      const cacheData = {
+        data: matrices,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(this.CACHE_KEY, JSON.stringify(cacheData));
+      console.log('[ExamService] Matrices cached successfully');
+    } catch (error) {
+      console.error('[ExamService] Error writing cache:', error);
+    }
+  }
+
+  /**
+   * Clear matrices cache
+   */
+  static clearMatricesCache(): void {
+    localStorage.removeItem(this.CACHE_KEY);
+    console.log('[ExamService] Matrices cache cleared');
+  }
+
+  /**
+   * Get all exam matrices (with caching)
+   */
+  static async getAllMatrices(forceRefresh = false): Promise<ExamMatrix[]> {
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = this.getCachedMatrices();
+      if (cached) {
+        return cached.data;
+      }
+    }
+
+    try {
+      console.log('[ExamService] Fetching matrices from API:', API_ENDPOINTS.EXAM.MATRICES_BASE);
+      const startTime = Date.now();
+      
       const response = await axiosInstance.get<MatrixListResponse>(
         API_ENDPOINTS.EXAM.MATRICES_BASE
       );
+      
+      const duration = Date.now() - startTime;
+      console.log(`[ExamService] Matrices loaded in ${duration}ms`);
+      
+      console.log('[ExamService] Matrices response:', response.data);
       
       // Handle different response structures
       const data = response.data?.data ?? response.data;
       
       if (Array.isArray(data)) {
-        return data.map((item: any) => ({
+        const matrices = data.map((item: any) => ({
           matrixId: item.matrixId ?? item.id ?? '',
           name: item.name ?? item.matrixName ?? 'Chưa đặt tên',
           totalQuestion: item.totalQuestion ?? 0,
@@ -39,11 +108,19 @@ export class ExamService {
           updatedAt: item.updatedAt ?? '',
           matrixDetails: item.matrixDetails ?? [],
         }));
+        
+        // Cache the result
+        this.setCachedMatrices(matrices);
+        
+        return matrices;
       }
       
       return [];
     } catch (error: any) {
-      console.error('Error fetching matrices:', error);
+      console.error('[ExamService] Error fetching matrices:', error);
+      console.error('[ExamService] Error response:', error?.response);
+      console.error('[ExamService] Error status:', error?.response?.status);
+      console.error('[ExamService] Error data:', error?.response?.data);
       throw new Error(error?.response?.data?.message || 'Không thể tải danh sách ma trận đề thi');
     }
   }
@@ -110,9 +187,13 @@ export class ExamService {
    */
   static async getExamRequestsByUserId(userId: string): Promise<ExamRequest[]> {
     try {
-      const response = await axiosInstance.get<ExamRequestListResponse>(
-        API_ENDPOINTS.EXAM.REQUEST_BY_USER(userId)
-      );
+      console.log('[ExamService] Fetching exam requests for user:', userId);
+      const endpoint = API_ENDPOINTS.EXAM.REQUEST_BY_USER(userId);
+      console.log('[ExamService] Request URL:', endpoint);
+      
+      const response = await axiosInstance.get<ExamRequestListResponse>(endpoint);
+      
+      console.log('[ExamService] Exam requests response:', response.data);
       
       const data = response.data?.data ?? response.data;
       
@@ -130,7 +211,10 @@ export class ExamService {
       
       return [];
     } catch (error: any) {
-      console.error('Error fetching exam requests:', error);
+      console.error('[ExamService] Error fetching exam requests:', error);
+      console.error('[ExamService] Error response:', error?.response);
+      console.error('[ExamService] Error status:', error?.response?.status);
+      console.error('[ExamService] Error data:', error?.response?.data);
       throw new Error(error?.response?.data?.message || 'Không thể tải danh sách yêu cầu');
     }
   }
