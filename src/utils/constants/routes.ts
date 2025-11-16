@@ -10,6 +10,7 @@ export const ROUTES = {
   WALLET: '/wallet',
   PAYMENT_CALLBACK: '/payment/callback',
   SLIDES: '/slides',
+  TEMPLATES: '/templates',
   EXAMS: '/exams',
   STAFF: '/staff',
   ADMIN: '/admin',
