@@ -42,6 +42,7 @@ export const TemplatesPage: React.FC = () => {
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchaseTemplate, setPurchaseTemplate] = useState<Template | UserTemplate | null>(null);
+  const [ownedTemplateIds, setOwnedTemplateIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchTemplates();
@@ -62,10 +63,23 @@ export const TemplatesPage: React.FC = () => {
           isActive: true,
         });
         setAllTemplates(result.items);
+        
+        // Also fetch owned templates to mark them
+        try {
+          const myTemplatesData = await templateService.getMyTemplates();
+          const ownedIds = new Set(myTemplatesData.map(t => t.templateId));
+          setOwnedTemplateIds(ownedIds);
+        } catch (err) {
+          // User might not be logged in, ignore error
+          setOwnedTemplateIds(new Set());
+        }
       } else {
         // Fetch user templates (free + owned premium)
         const data = await templateService.getMyTemplates();
         setMyTemplates(data);
+        // Track owned template IDs
+        const ownedIds = new Set(data.map(t => t.templateId));
+        setOwnedTemplateIds(ownedIds);
       }
     } catch (error: any) {
       toast.error('Không thể tải danh sách template');
@@ -144,14 +158,22 @@ export const TemplatesPage: React.FC = () => {
     }
   };
 
+  const isTemplateOwned = (templateId: string): boolean => {
+    return ownedTemplateIds.has(templateId);
+  };
+
   const handlePurchase = (template: Template | UserTemplate) => {
     setPurchaseTemplate(template);
     setShowPurchaseModal(true);
   };
 
-  const handlePurchaseSuccess = () => {
+  const handlePurchaseSuccess = async () => {
+    // Add to owned templates immediately for better UX
+    if (purchaseTemplate) {
+      setOwnedTemplateIds(prev => new Set([...prev, purchaseTemplate.templateId]));
+    }
     // Refresh templates after purchase
-    fetchTemplates();
+    await fetchTemplates();
   };
 
   return (
@@ -432,15 +454,22 @@ export const TemplatesPage: React.FC = () => {
                         Tải
                       </button>
                     )}
-                    {/* Show buy button for premium templates in "All Templates" tab */}
+                    {/* Show buy button or owned badge for premium templates in "All Templates" tab */}
                     {template.isPremium && activeTab === 'all' && (
-                      <button
-                        onClick={() => handlePurchase(template)}
-                        className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                      >
-                        <ShoppingCart className="w-4 h-4" />
-                        Mua
-                      </button>
+                      isTemplateOwned(template.templateId) ? (
+                        <div className="flex-1 bg-green-100 text-green-700 px-4 py-2 rounded-xl font-semibold flex items-center justify-center gap-2 cursor-default">
+                          <Check className="w-4 h-4" />
+                          Đã có
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handlePurchase(template)}
+                          className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                        >
+                          <ShoppingCart className="w-4 h-4" />
+                          Mua
+                        </button>
+                      )
                     )}
                   </div>
                 </motion.div>
@@ -534,15 +563,22 @@ export const TemplatesPage: React.FC = () => {
                             Tải xuống
                           </button>
                         )}
-                        {/* Show buy button for premium templates in "All Templates" tab */}
+                        {/* Show buy button or owned badge for premium templates in "All Templates" tab */}
                         {template.isPremium && activeTab === 'all' && (
-                          <button
-                            onClick={() => handlePurchase(template)}
-                            className="px-6 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
-                          >
-                            <ShoppingCart className="w-5 h-5" />
-                            Mua ngay
-                          </button>
+                          isTemplateOwned(template.templateId) ? (
+                            <div className="px-6 py-2 bg-green-100 text-green-700 rounded-xl font-semibold flex items-center gap-2 cursor-default">
+                              <Check className="w-5 h-5" />
+                              Đã sở hữu
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handlePurchase(template)}
+                              className="px-6 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+                            >
+                              <ShoppingCart className="w-5 h-5" />
+                              Mua ngay
+                            </button>
+                          )
                         )}
                       </div>
                     </div>

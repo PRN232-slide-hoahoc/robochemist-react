@@ -61,18 +61,36 @@ export const PurchaseTemplateModal: React.FC<PurchaseTemplateModalProps> = ({
       setLoading(true);
       setPurchaseStep('processing');
 
+      // Check if user already owns this template
+      const hasAccess = await templateService.checkTemplateAccess(template.templateId);
+      if (hasAccess) {
+        toast.error('Bạn đã sở hữu template này rồi!');
+        setPurchaseStep('error');
+        setLoading(false);
+        return;
+      }
+
       // Step 1: Create payment transaction
+      // Generate unique transaction reference ID
+      const transactionId = crypto.randomUUID();
+      
       const paymentPayload = {
         userId: user.id,
         amount: template.price,
-        referenceId: template.templateId,
+        referenceId: transactionId, // Use unique transaction ID instead of templateId
         referenceType: 'TEMPLATE_PURCHASE',
         description: `Mua template: ${template.templateName}`,
       };
 
+      console.log('Payment payload:', paymentPayload);
+      console.log('User ID:', user.id, 'Template ID:', template.templateId, 'Transaction ID:', transactionId);
+
       const paymentResult = await walletService.createWalletPayment(paymentPayload);
       
-      if (!paymentResult || paymentResult.status !== 'Completed') {
+      console.log('Payment result:', paymentResult);
+      console.log('Payment status:', paymentResult?.status);
+      
+      if (!paymentResult || paymentResult.status !== 'Hoàn thành') {
         throw new Error('Thanh toán không thành công');
       }
 
