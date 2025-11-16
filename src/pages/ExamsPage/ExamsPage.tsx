@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Container } from '@/components/layout/Container';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
@@ -7,8 +7,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { ExamService } from '@/services/exam/examService';
 import type { ExamMatrix, ExamRequest } from '@/types/exam.types';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 export const ExamsPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [matrices, setMatrices] = useState<ExamMatrix[]>([]);
   const [selectedMatrix, setSelectedMatrix] = useState<string>('');
@@ -18,52 +20,131 @@ export const ExamsPage: React.FC = () => {
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [requests, setRequests] = useState<ExamRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [matricesError, setMatricesError] = useState<string | null>(null);
+  const [requestsError, setRequestsError] = useState<string | null>(null);
 
-  // Fetch matrices on mount
+  // Fetch matrices on mount - optimized with cleanup
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchMatrices = async () => {
       setLoadingMatrices(true);
+      setMatricesError(null);
       try {
         const data = await ExamService.getAllMatrices();
-        setMatrices(data);
-        setError(null);
+        if (isMounted) {
+          setMatrices(data);
+          setMatricesError(null);
+        }
       } catch (err: any) {
-        console.error('Error loading matrices:', err);
-        toast.error(err.message || 'Không thể tải danh sách ma trận đề thi');
+        if (isMounted) {
+          console.error('Error loading matrices:', err);
+          const errorMsg = err.message || 'Không thể tải danh sách ma trận đề thi';
+          setMatricesError(errorMsg);
+          toast.error(errorMsg);
+        }
       } finally {
-        setLoadingMatrices(false);
+        if (isMounted) {
+          setLoadingMatrices(false);
+        }
       }
     };
 
     fetchMatrices();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Fetch exam requests when user is authenticated
+  // Memoize sorted matrices for better performance
+  const sortedMatrices = useMemo(() => {
+    return [...matrices].sort((a, b) => a.name.localeCompare(b.name));
+  }, [matrices]);
+
+  // Retry loading matrices
+  const retryLoadMatrices = useCallback(async () => {
+    setLoadingMatrices(true);
+    setMatricesError(null);
+    try {
+      const data = await ExamService.getAllMatrices(true); // Force refresh to bypass cache
+      setMatrices(data);
+      setMatricesError(null);
+      toast.success('Tải lại thành công!');
+    } catch (err: any) {
+      const errorMsg = err.message || 'Không thể tải danh sách ma trận đề thi';
+      setMatricesError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setLoadingMatrices(false);
+    }
+  }, []);
+
+  // Retry loading exam requests
+  const retryLoadRequests = useCallback(async () => {
+    if (!user?.id) {
+      toast.error('Bạn cần đăng nhập');
+      return;
+    }
+    
+    setLoadingRequests(true);
+    setRequestsError(null);
+    try {
+      const data = await ExamService.getExamRequestsByUserId(user.id);
+      setRequests(data);
+      setRequestsError(null);
+      toast.success('Tải lại thành công!');
+    } catch (err: any) {
+      const errorMsg = err.message || 'Không thể tải danh sách yêu cầu';
+      setRequestsError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setLoadingRequests(false);
+    }
+  }, [user?.id]);
+
+  // Fetch exam requests when user is authenticated - optimized with cleanup
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchRequests = async () => {
       if (!isAuthenticated || !user?.id) {
-        setLoadingRequests(false);
+        if (isMounted) {
+          setLoadingRequests(false);
+        }
         return;
       }
 
       setLoadingRequests(true);
+      setRequestsError(null);
       try {
         const data = await ExamService.getExamRequestsByUserId(user.id);
-        console.log('[ExamsPage] Exam Requests:', data);
-        setRequests(data);
-        setError(null);
+        if (isMounted) {
+          setRequests(data);
+          setRequestsError(null);
+        }
       } catch (err: any) {
-        console.error('Error loading exam requests:', err);
-        toast.error(err.message || 'Không thể tải danh sách yêu cầu');
+        if (isMounted) {
+          console.error('Error loading exam requests:', err);
+          const errorMsg = err.message || 'Không thể tải danh sách yêu cầu';
+          setRequestsError(errorMsg);
+          toast.error(errorMsg);
+        }
       } finally {
-        setLoadingRequests(false);
+        if (isMounted) {
+          setLoadingRequests(false);
+        }
       }
     };
 
     fetchRequests();
-  }, [isAuthenticated, user]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, user?.id]);
 
-  const handleCreateRequest = async () => {
+  const handleCreateRequest = useCallback(async () => {
     if (!selectedMatrix) {
       setError('Vui lòng chọn ma trận đề');
       toast.error('Vui lòng chọn ma trận đề');
@@ -99,9 +180,9 @@ export const ExamsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedMatrix, user?.id, FIXED_PRICE]);
 
-  const handleDownload = async (examId: string) => {
+  const handleDownload = useCallback(async (examId: string) => {
     try {
       setLoading(true);
       await ExamService.downloadExam(examId);
@@ -111,15 +192,14 @@ export const ExamsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleDownloadByRequest = async (examRequestId: string) => {
+  const handleDownloadByRequest = useCallback(async (examRequestId: string) => {
     try {
       setLoading(true);
       
       // Get exam request details to find generated exam ID
       const request = await ExamService.getExamRequestById(examRequestId);
-      console.log('[Download] Exam Request Details:', request);
       
       if (request.generatedExams && request.generatedExams.length > 0) {
         const examId = request.generatedExams[0].generatedExamId;
@@ -133,9 +213,9 @@ export const ExamsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const getStatusBadgeColor = (status?: string) => {
+  const getStatusBadgeColor = useCallback((status?: string) => {
     switch (status) {
       case 'Completed':
         return 'bg-green-100 text-green-800';
@@ -149,9 +229,9 @@ export const ExamsPage: React.FC = () => {
       default:
         return 'bg-yellow-100 text-yellow-800';
     }
-  };
+  }, []);
 
-  const getStatusText = (status?: string) => {
+  const getStatusText = useCallback((status?: string) => {
     switch (status) {
       case 'Completed':
         return 'Hoàn thành';
@@ -165,14 +245,19 @@ export const ExamsPage: React.FC = () => {
       default:
         return 'Đang chờ';
     }
-  };
+  }, []);
 
   return (
     <Layout>
       <Container className="py-12">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Đề thi & Bài tập</h1>
-          <p className="text-sm text-gray-600">Tạo và quản lý đề thi, ngân hàng câu hỏi và lịch làm bài.</p>
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Đề thi & Bài tập</h1>
+            <p className="text-sm text-gray-600">Tạo và quản lý đề thi, ngân hàng câu hỏi và lịch làm bài.</p>
+          </div>
+          <Button onClick={() => navigate('/exams/create-matrix')}>
+            + Tạo ma trận mới
+          </Button>
         </div>
 
         {/* Create Exam Request Card */}
@@ -187,9 +272,27 @@ export const ExamsPage: React.FC = () => {
                   Chọn ma trận đề thi
                 </label>
                 {loadingMatrices ? (
-                  <div className="text-sm text-gray-500">Đang tải danh sách ma trận...</div>
-                ) : matrices.length === 0 ? (
-                  <div className="text-sm text-gray-500">Chưa có ma trận đề thi nào</div>
+                  <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span>Đang tải danh sách ma trận...</span>
+                    <span className="text-xs text-gray-400">(Backend đang xử lý, có thể mất 5-10s)</span>
+                  </div>
+                ) : matricesError ? (
+                  <div className="space-y-2">
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-600">{matricesError}</p>
+                    </div>
+                    <Button variant="outline" onClick={retryLoadMatrices} disabled={loadingMatrices}>
+                      🔄 Thử lại
+                    </Button>
+                  </div>
+                ) : sortedMatrices.length === 0 ? (
+                  <div className="space-y-2">
+                    <div className="text-sm text-gray-500">Chưa có ma trận đề thi nào</div>
+                    <Button onClick={() => navigate('/exams/create-matrix')}>
+                      + Tạo ma trận mới
+                    </Button>
+                  </div>
                 ) : (
                   <select 
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
@@ -198,7 +301,7 @@ export const ExamsPage: React.FC = () => {
                     disabled={loading}
                   >
                     <option value="">-- Chọn ma trận --</option>
-                    {matrices.map((m) => (
+                    {sortedMatrices.map((m) => (
                       <option key={m.matrixId} value={m.matrixId}>
                         {m.name} ({m.totalQuestion} câu)
                       </option>
@@ -244,6 +347,19 @@ export const ExamsPage: React.FC = () => {
             {loadingRequests ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">Đang tải danh sách yêu cầu...</p>
+              </div>
+            ) : requestsError ? (
+              <div className="text-center py-8">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600 mb-4">Không thể tải danh sách yêu cầu</p>
+                  <Button
+                    onClick={retryLoadRequests}
+                    variant="outline"
+                    disabled={loadingRequests}
+                  >
+                    🔄 Thử lại
+                  </Button>
+                </div>
               </div>
             ) : requests.length === 0 ? (
               <div className="text-center py-8">
@@ -298,7 +414,7 @@ export const ExamsPage: React.FC = () => {
                             r.generatedExams.map((exam: any) => (
                               <Button 
                                 key={exam.generatedExamId || exam.id}
-                                variant="default"
+                                variant="primary"
                                 onClick={() => handleDownload(exam.generatedExamId || exam.id)}
                                 disabled={loading}
                               >
@@ -308,7 +424,7 @@ export const ExamsPage: React.FC = () => {
                           ) : (
                             // Status = Completed nhưng chưa có generatedExams - thử download bằng requestId
                             <Button 
-                              variant="default"
+                              variant="primary"
                               onClick={() => handleDownloadByRequest(r.examRequestId)}
                               disabled={loading}
                             >

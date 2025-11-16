@@ -24,6 +24,9 @@ export const Header: React.FC = () => {
               <a href={ROUTES.SLIDES} className="text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-300">
                 Slides
               </a>
+              <a href={ROUTES.EXAMS} className="text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-300">
+                Đề thi
+              </a>
               <a href={ROUTES.WALLET} className="text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-300">
                 Ví
               </a>

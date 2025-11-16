@@ -15,6 +15,7 @@ const PaymentCallbackPage = lazy(() => import('@/pages/PaymentCallbackPage').the
 const TemplatesPage = lazy(() => import('@/pages/TemplatesPage/TemplatesPage').then(m => ({ default: m.TemplatesPage })));
 const SlidesPage = lazy(() => import('@/pages/SlidesPage/SlidesPage').then(m => ({ default: m.SlidesPage })));
 const ExamsPage = lazy(() => import('@/pages/ExamsPage/ExamsPage').then(m => ({ default: m.ExamsPage })));
+const CreateMatrixPage = lazy(() => import('@/pages/CreateMatrixPage').then(m => ({ default: m.CreateMatrixPage })));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 // Staff pages
@@ -47,6 +48,7 @@ function App() {
             <Route path="/templates" element={<TemplatesPage />} />
             <Route path="/slides" element={<SlidesPage />} />
             <Route path="/exams" element={<ExamsPage />} />
+            <Route path="/exams/create-matrix" element={<CreateMatrixPage />} />
             
             {/* Staff Routes */}
             <Route
