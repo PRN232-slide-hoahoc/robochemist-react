@@ -16,6 +16,15 @@ export interface ExamMatrix {
   matrixDetails?: MatrixDetail[];
 }
 
+export interface MatrixBasic {
+  matrixId: string;
+  name: string;
+  totalQuestion: number;
+  isActive: boolean;
+  createdAt?: string;
+  createdBy?: string;
+}
+
 export interface MatrixDetail {
   matrixDetailsId: string;
   topicId: string;
@@ -114,6 +123,11 @@ export interface OptionDetail {
 
 export interface MatrixListResponse {
   data: ExamMatrix[];
+  total?: number;
+}
+
+export interface MatrixBasicListResponse {
+  data: MatrixBasic[];
   total?: number;
 }
 
