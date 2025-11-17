@@ -22,6 +22,7 @@ const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ defa
 const StaffDashboard = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.StaffDashboard })));
 const TemplateManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.TemplateManagement })));
 const OrderManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.OrderManagement })));
+const QuestionManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.QuestionManagement })));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminDashboard })));
@@ -62,6 +63,7 @@ function App() {
               <Route index element={<StaffDashboard />} />
               <Route path="templates" element={<TemplateManagement />} />
               <Route path="orders" element={<OrderManagement />} />
+              <Route path="questions" element={<QuestionManagement />} />
             </Route>
 
             {/* Admin Routes */}

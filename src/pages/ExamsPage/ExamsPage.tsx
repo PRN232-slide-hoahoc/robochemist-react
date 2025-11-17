@@ -5,14 +5,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { ExamService } from '@/services/exam/examService';
-import type { ExamMatrix, ExamRequest } from '@/types/exam.types';
+import type { MatrixBasic, ExamRequest } from '@/types/exam.types';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
 export const ExamsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const [matrices, setMatrices] = useState<ExamMatrix[]>([]);
+  const [matrices, setMatrices] = useState<MatrixBasic[]>([]);
   const [selectedMatrix, setSelectedMatrix] = useState<string>('');
   const FIXED_PRICE = 20000; // Set cứng giá 20,000 VND
   const [loading, setLoading] = useState(false);
@@ -23,7 +23,7 @@ export const ExamsPage: React.FC = () => {
   const [matricesError, setMatricesError] = useState<string | null>(null);
   const [requestsError, setRequestsError] = useState<string | null>(null);
 
-  // Fetch matrices on mount - optimized with cleanup
+  // Fetch matrices on mount - optimized with cleanup - using names API for faster loading
   useEffect(() => {
     let isMounted = true;
     
@@ -31,7 +31,7 @@ export const ExamsPage: React.FC = () => {
       setLoadingMatrices(true);
       setMatricesError(null);
       try {
-        const data = await ExamService.getAllMatrices();
+        const data = await ExamService.getAllMatrixNames();
         if (isMounted) {
           setMatrices(data);
           setMatricesError(null);
@@ -67,7 +67,7 @@ export const ExamsPage: React.FC = () => {
     setLoadingMatrices(true);
     setMatricesError(null);
     try {
-      const data = await ExamService.getAllMatrices(true); // Force refresh to bypass cache
+      const data = await ExamService.getAllMatrixNames(true); // Force refresh to bypass cache
       setMatrices(data);
       setMatricesError(null);
       toast.success('Tải lại thành công!');
@@ -182,6 +182,30 @@ export const ExamsPage: React.FC = () => {
     }
   }, [selectedMatrix, user?.id, FIXED_PRICE]);
 
+  const handleDownloadQuestions = useCallback(async (examId: string) => {
+    try {
+      setLoading(true);
+      await ExamService.downloadExamQuestions(examId);
+      toast.success('Đang tải xuống đề thi...');
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải xuống đề thi');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleDownloadAnswers = useCallback(async (examId: string) => {
+    try {
+      setLoading(true);
+      await ExamService.downloadAnswerKey(examId);
+      toast.success('Đang tải xuống đáp án...');
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tải xuống đáp án');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const handleDownload = useCallback(async (examId: string) => {
     try {
       setLoading(true);
@@ -194,7 +218,7 @@ export const ExamsPage: React.FC = () => {
     }
   }, []);
 
-  const handleDownloadByRequest = useCallback(async (examRequestId: string) => {
+  const handleDownloadByRequest = useCallback(async (examRequestId: string, type: 'questions' | 'answers' | 'full' = 'full') => {
     try {
       setLoading(true);
       
@@ -203,8 +227,17 @@ export const ExamsPage: React.FC = () => {
       
       if (request.generatedExams && request.generatedExams.length > 0) {
         const examId = request.generatedExams[0].generatedExamId;
-        await ExamService.downloadExam(examId);
-        toast.success('Đang tải xuống đề thi...');
+        
+        if (type === 'questions') {
+          await ExamService.downloadExamQuestions(examId);
+          toast.success('Đang tải xuống đề thi...');
+        } else if (type === 'answers') {
+          await ExamService.downloadAnswerKey(examId);
+          toast.success('Đang tải xuống đáp án...');
+        } else {
+          await ExamService.downloadExam(examId);
+          toast.success('Đang tải xuống đề thi...');
+        }
       } else {
         toast.error('Chưa có đề thi nào được tạo cho yêu cầu này');
       }
@@ -410,26 +443,47 @@ export const ExamsPage: React.FC = () => {
                       {r.status === 'Completed' ? (
                         <>
                           {r.generatedExams && r.generatedExams.length > 0 ? (
-                            // Có dữ liệu generatedExams - dùng generatedExamId
+                            // Có dữ liệu generatedExams - hiện 2 nút download
                             r.generatedExams.map((exam: any) => (
-                              <Button 
-                                key={exam.generatedExamId || exam.id}
-                                variant="primary"
-                                onClick={() => handleDownload(exam.generatedExamId || exam.id)}
-                                disabled={loading}
-                              >
-                                📥 Tải xuống đề thi
-                              </Button>
+                              <div key={exam.generatedExamId || exam.id} className="flex gap-2">
+                                <Button 
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => handleDownloadQuestions(exam.generatedExamId || exam.id)}
+                                  disabled={loading}
+                                >
+                                  📄 Tải đề
+                                </Button>
+                                <Button 
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDownloadAnswers(exam.generatedExamId || exam.id)}
+                                  disabled={loading}
+                                >
+                                  ✅ Tải đáp án
+                                </Button>
+                              </div>
                             ))
                           ) : (
-                            // Status = Completed nhưng chưa có generatedExams - thử download bằng requestId
-                            <Button 
-                              variant="primary"
-                              onClick={() => handleDownloadByRequest(r.examRequestId)}
-                              disabled={loading}
-                            >
-                              📥 Tải xuống đề thi
-                            </Button>
+                            // Status = Completed nhưng chưa có generatedExams - cũng hiện 2 nút nhưng dùng requestId
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleDownloadByRequest(r.examRequestId, 'questions')}
+                                disabled={loading}
+                              >
+                                📄 Tải đề
+                              </Button>
+                              <Button 
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownloadByRequest(r.examRequestId, 'answers')}
+                                disabled={loading}
+                              >
+                                ✅ Tải đáp án
+                              </Button>
+                            </div>
                           )}
                         </>
                       ) : (
@@ -439,18 +493,6 @@ export const ExamsPage: React.FC = () => {
                           {r.status === 'Failed' && '❌ Tạo đề thất bại'}
                         </div>
                       )}
-                      <Button 
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Navigate to detail page or show modal
-                          toast('Tính năng xem chi tiết đang được phát triển', {
-                            icon: 'ℹ️',
-                          });
-                        }}
-                      >
-                        Chi tiết
-                      </Button>
                     </div>
                   </div>
                   );

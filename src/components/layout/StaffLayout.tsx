@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   ChevronLeft,
+  HelpCircle,
 } from 'lucide-react';
 import { useAuthStore } from '@/store';
 
@@ -34,6 +35,11 @@ const navItems: NavItem[] = [
     icon: ShoppingCart,
     label: 'Quản lý Đơn hàng',
     path: '/staff/orders',
+  },
+  {
+    icon: HelpCircle,
+    label: 'Quản lý Câu hỏi',
+    path: '/staff/questions',
   },
 ];
 
