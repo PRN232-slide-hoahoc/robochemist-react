@@ -31,6 +31,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      // Only persist plain data (avoid persisting functions)
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+      }),
     }
   )
 );

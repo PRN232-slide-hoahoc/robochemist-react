@@ -106,7 +106,7 @@ class AuthService {
     
     // Convert AuthResponse to User object
     const user: User = {
-      userId: authData.userId,
+      id: authData.userId,
       fullname: authData.fullname,
       email: authData.email,
     };

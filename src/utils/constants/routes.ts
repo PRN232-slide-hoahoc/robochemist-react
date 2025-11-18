@@ -7,6 +7,13 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   PROFILE: '/profile',
+  WALLET: '/wallet',
+  PAYMENT_CALLBACK: '/payment/callback',
+  SLIDES: '/slides',
+  TEMPLATES: '/templates',
+  EXAMS: '/exams',
+  STAFF: '/staff',
+  ADMIN: '/admin',
   NOT_FOUND: '/404',
 } as const;
 
