@@ -6,14 +6,12 @@ import type {
   UserTemplateResponse,
   UploadTemplateRequest,
   UploadTemplateResponse,
-  GrantTemplateAccessRequest,
   PagedResult,
   TemplateFilters,
 } from '@/types/template.types';
 import type { ApiResponse } from '@/types/api.types';
 
 const TEMPLATE_API_BASE = API_ENDPOINTS.TEMPLATE.TEMPLATES;
-const USER_TEMPLATE_API_BASE = '/template/v1/user-templates';
 
 /**
  * Template Service - Handles all template-related API calls
@@ -157,7 +155,7 @@ export const templateService = {
    */
   async getMyTemplates(): Promise<UserTemplateResponse[]> {
     const response = await apiClient.get<ApiResponse<UserTemplateResponse[]>>(
-      `${USER_TEMPLATE_API_BASE}`
+      `${TEMPLATE_API_BASE}/my`
     );
     return response.data.data;
   },
@@ -167,18 +165,28 @@ export const templateService = {
    */
   async checkTemplateAccess(templateId: string): Promise<boolean> {
     const response = await apiClient.get<ApiResponse<boolean>>(
-      `${USER_TEMPLATE_API_BASE}/${templateId}/access`
+      `${TEMPLATE_API_BASE}/${templateId}/access`
     );
     return response.data.data;
   },
 
   /**
-   * Grant template access to user
+   * Purchase a template (orchestrates payment and access granting in backend)
    */
-  async grantTemplateAccess(request: GrantTemplateAccessRequest): Promise<UserTemplate> {
+  async purchaseTemplate(templateId: string): Promise<any> {
+    const response = await apiClient.post<ApiResponse<any>>(
+      `${TEMPLATE_API_BASE}/${templateId}/purchase`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Grant template access to user (Admin only - kept for backward compatibility)
+   * @deprecated Use purchaseTemplate instead
+   */
+  async grantTemplateAccess(request: { templateId: string }): Promise<UserTemplate> {
     const response = await apiClient.post<ApiResponse<UserTemplate>>(
-      `${USER_TEMPLATE_API_BASE}`,
-      request
+      `${TEMPLATE_API_BASE}/${request.templateId}/grant`
     );
     return response.data.data;
   },
@@ -188,7 +196,7 @@ export const templateService = {
    */
   async revokeTemplateAccess(userTemplateId: string): Promise<boolean> {
     const response = await apiClient.delete<ApiResponse<boolean>>(
-      `${USER_TEMPLATE_API_BASE}/${userTemplateId}`
+      `/template/v1/user-templates/${userTemplateId}`
     );
     return response.data.data;
   },
@@ -198,7 +206,7 @@ export const templateService = {
    */
   async getUserTemplatesByUserId(userId: string): Promise<UserTemplate[]> {
     const response = await apiClient.get<ApiResponse<UserTemplate[]>>(
-      `${USER_TEMPLATE_API_BASE}/users/${userId}`
+      `/template/v1/user-templates/users/${userId}`
     );
     return response.data.data;
   },
