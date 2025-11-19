@@ -36,6 +36,7 @@ export const API_ENDPOINTS = {
     ALL: '/slides/v1/slides', // Admin get all slides
     SLIDE_BY_ID: (id: string) => `/slides/v1/slides/${id}`,
     SLIDE_DOWNLOAD: (id: string) => `/slides/v1/slides/${id}/download`,
+    CHANGE_TEMPLATE: '/slides/v1/slides/change-template',
     SYLLABUSES: '/slides/v1/syllabuses',
     SYLLABUS_BY_ID: (id: string) => `/slides/v1/syllabuses/${id}`,
     SYLLABUS_TOGGLE_STATUS: (id: string) => `/slides/v1/syllabuses/${id}/toggle-status`,
