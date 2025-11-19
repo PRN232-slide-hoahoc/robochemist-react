@@ -185,7 +185,7 @@ export const SlidesPage: React.FC = () => {
     const fetchSyllabuses = async () => {
       setLoadingSyllabuses(true);
       try {
-        const data = await slideService.getSyllabuses(selectedTopic);
+        const data = await slideService.getSyllabuses(selectedGrade, selectedTopic);
         setSyllabuses(Array.isArray(data) ? data : []);
         // Reset syllabus selection
         setSelectedSyllabus('');
@@ -198,7 +198,7 @@ export const SlidesPage: React.FC = () => {
     };
 
     fetchSyllabuses();
-  }, [selectedTopic]);
+  }, [selectedTopic, selectedGrade]);
 
   // Load user templates when syllabus is selected
   useEffect(() => {
@@ -237,8 +237,8 @@ export const SlidesPage: React.FC = () => {
       return;
     }
 
-    if (numberOfSlides < 1 || numberOfSlides > 50) {
-      setError('Số lượng slide phải từ 1 đến 50');
+    if (numberOfSlides < 3 || numberOfSlides > 30) {
+      setError('Số lượng slide phải từ 3 đến 30');
       return;
     }
 
@@ -262,11 +262,18 @@ export const SlidesPage: React.FC = () => {
 
       setResult(response);
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message 
-        || err?.response?.data?.errors?.[0] 
-        || err.message 
-        || 'Tạo slide thất bại';
-      setError(errorMessage);
+      // Handle validation errors from backend
+      if (err?.response?.data?.errors) {
+        const validationErrors = err.response.data.errors;
+        const errorMessages = Object.values(validationErrors).flat();
+        setError(errorMessages.join('. '));
+      } else {
+        const errorMessage = err?.response?.data?.message 
+          || err?.response?.data?.title
+          || err.message 
+          || 'Tạo slide thất bại';
+        setError(errorMessage);
+      }
       console.error('Generate slide error:', err?.response?.data || err);
     } finally {
       setLoading(false);
@@ -572,8 +579,8 @@ export const SlidesPage: React.FC = () => {
                     </label>
                     <input
                       type="number"
-                      min={1}
-                      max={50}
+                      min={3}
+                      max={30}
                       value={numberOfSlides}
                       onChange={(e) => setNumberOfSlides(Number(e.target.value))}
                       className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 text-lg font-semibold focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
@@ -582,7 +589,7 @@ export const SlidesPage: React.FC = () => {
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
-                      Khuyến nghị: 10-20 slide cho một bài học
+                      Yêu cầu: 3-30 slide (khuyến nghị 10-15 slide cho một bài học)
                     </p>
                   </div>
 
