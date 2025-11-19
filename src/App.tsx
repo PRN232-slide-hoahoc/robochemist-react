@@ -26,6 +26,7 @@ const OrderManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ defa
 const QuestionManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.QuestionManagement })));
 const SyllabusManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.SyllabusManagement })));
 const SlideManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.SlideManagement })));
+const TransactionManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.TransactionManagement })));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminDashboard })));
@@ -69,6 +70,7 @@ function App() {
               <Route path="questions" element={<QuestionManagement />} />
               <Route path="syllabuses" element={<SyllabusManagement />} />
               <Route path="slides" element={<SlideManagement />} />
+              <Route path="transactions" element={<TransactionManagement />} />
             </Route>
 
             {/* Admin Routes */}

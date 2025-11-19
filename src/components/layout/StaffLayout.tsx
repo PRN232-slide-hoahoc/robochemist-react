@@ -13,6 +13,7 @@ import {
   HelpCircle,
   BookOpen,
   Presentation,
+  Wallet,
 } from 'lucide-react';
 import { useAuthStore } from '@/store';
 
@@ -52,6 +53,9 @@ const navItems: NavItem[] = [
     icon: Presentation,
     label: 'Quản lý Slides',
     path: '/staff/slides',
+    icon: Wallet,
+    label: 'Quản lý Giao dịch',
+    path: '/staff/transactions',
   },
 ];
 
