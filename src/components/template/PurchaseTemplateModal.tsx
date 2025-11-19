@@ -70,36 +70,16 @@ export const PurchaseTemplateModal: React.FC<PurchaseTemplateModalProps> = ({
         return;
       }
 
-      // Step 1: Create payment transaction
-      // Generate unique transaction reference ID
-      const transactionId = crypto.randomUUID();
+      // Call TemplateService purchase endpoint (backend orchestrates payment + grant access)
+      console.log('Purchasing template:', template.templateId);
       
-      const paymentPayload = {
-        userId: user.id,
-        amount: template.price,
-        referenceId: transactionId, // Use unique transaction ID instead of templateId
-        referenceType: 'TEMPLATE_PURCHASE',
-        description: `Mua template: ${template.templateName}`,
-      };
-
-      console.log('Payment payload:', paymentPayload);
-      console.log('User ID:', user.id, 'Template ID:', template.templateId, 'Transaction ID:', transactionId);
-
-      const paymentResult = await walletService.createWalletPayment(paymentPayload);
+      const purchaseResult = await templateService.purchaseTemplate(template.templateId);
       
-      console.log('Payment result:', paymentResult);
-      console.log('Payment status:', paymentResult?.status);
+      console.log('Purchase result:', purchaseResult);
       
-      if (!paymentResult || paymentResult.status !== 'Hoàn thành') {
+      if (!purchaseResult || purchaseResult.status !== 'Hoàn thành') {
         throw new Error('Thanh toán không thành công');
       }
-
-      // Step 2: Grant template access
-      const grantAccessPayload = {
-        templateId: template.templateId,
-      };
-
-      await templateService.grantTemplateAccess(grantAccessPayload);
 
       // Success
       setPurchaseStep('success');
