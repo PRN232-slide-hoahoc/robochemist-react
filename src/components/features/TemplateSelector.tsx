@@ -24,6 +24,7 @@ interface TemplateSelectorProps {
   selectedTemplateId: string;
   onSelectTemplate: (templateId: string) => void;
   loading?: boolean;
+  actionButtons?: (template: UserTemplateResponse) => React.ReactNode;
 }
 
 export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
@@ -31,6 +32,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   selectedTemplateId,
   onSelectTemplate,
   loading = false,
+  actionButtons,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -132,16 +134,16 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTemplates.map((template, index) => (
-            <div
-              key={template.templateId}
-              onClick={() => onSelectTemplate(template.templateId)}
-              className={`group cursor-pointer rounded-2xl border-2 overflow-hidden transition-all duration-300 ${
-                selectedTemplateId === template.templateId
-                  ? 'border-primary-600 bg-gradient-to-br from-primary-50 to-primary-100 shadow-xl scale-105'
-                  : 'border-gray-200 bg-white hover:border-primary-400 hover:shadow-lg hover:scale-102'
-              }`}
-              style={{ transitionDelay: `${index * 30}ms` }}
-            >
+            <React.Fragment key={template.templateId}>
+              <div
+                onClick={() => onSelectTemplate(template.templateId)}
+                className={`group cursor-pointer rounded-2xl border-2 overflow-hidden transition-all duration-300 ${
+                  selectedTemplateId === template.templateId
+                    ? 'border-primary-600 bg-gradient-to-br from-primary-50 to-primary-100 shadow-xl scale-105'
+                    : 'border-gray-200 bg-white hover:border-primary-400 hover:shadow-lg hover:scale-102'
+                }`}
+                style={{ transitionDelay: `${index * 30}ms` }}
+              >
               {/* Thumbnail */}
               <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
                 {template.thumbnailUrl ? (
@@ -244,6 +246,14 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 </Button>
               </div>
             </div>
+
+            {/* Action Buttons - Render immediately after selected template */}
+            {selectedTemplateId === template.templateId && actionButtons && (
+              <div className="md:col-span-2 lg:col-span-3">
+                {actionButtons(template)}
+              </div>
+            )}
+          </React.Fragment>
           ))}
         </div>
       )}

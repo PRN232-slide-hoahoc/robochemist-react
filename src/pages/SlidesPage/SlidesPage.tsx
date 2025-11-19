@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { Layout } from '@/components/layout/Layout';
 import { Container } from '@/components/layout/Container';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -59,6 +60,13 @@ export const SlidesPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('GeneratedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Change template state
+  const [changingSlideId, setChangingSlideId] = useState<string | null>(null);
+  const [changeTemplates, setChangeTemplates] = useState<UserTemplateResponse[]>([]);
+  const [changeSelectedTemplate, setChangeSelectedTemplate] = useState<string>('');
+  const [loadingChangeTemplates, setLoadingChangeTemplates] = useState(false);
+  const [changingTemplate, setChangingTemplate] = useState(false);
 
   // Load grades on mount
   useEffect(() => {
@@ -277,6 +285,67 @@ export const SlidesPage: React.FC = () => {
       console.error('Generate slide error:', err?.response?.data || err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle start change template
+  const handleStartChangeTemplate = async (slideId: string) => {
+    setChangingSlideId(slideId);
+    setChangeSelectedTemplate('');
+    setLoadingChangeTemplates(true);
+    try {
+      const data = await templateService.getMyTemplates();
+      setChangeTemplates(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load templates:', err);
+      setChangeTemplates([]);
+    } finally {
+      setLoadingChangeTemplates(false);
+    }
+  };
+
+  // Handle cancel change template
+  const handleCancelChangeTemplate = () => {
+    setChangingSlideId(null);
+    setChangeSelectedTemplate('');
+    setChangeTemplates([]);
+  };
+
+  // Handle confirm change template
+  const handleConfirmChangeTemplate = async () => {
+    if (!changeSelectedTemplate) {
+      toast.error('Vui lòng chọn template mới');
+      return;
+    }
+
+    if (!changingSlideId) {
+      toast.error('Không tìm thấy slide cần đổi template');
+      return;
+    }
+
+    setChangingTemplate(true);
+    try {
+      // Call API to change template
+      await slideService.changeSlideTemplate(changingSlideId, changeSelectedTemplate);
+      toast.success('Đổi template thành công! Slide sẽ được tạo lại.', {
+        duration: 4000,
+        icon: '✅',
+      });
+      handleCancelChangeTemplate();
+      // Reload history
+      loadHistory();
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message 
+        || err?.response?.data?.title
+        || err.message 
+        || 'Đổi template thất bại';
+      toast.error(errorMessage, {
+        duration: 5000,
+        icon: '❌',
+      });
+      console.error('Change template error:', err?.response?.data || err);
+    } finally {
+      setChangingTemplate(false);
     }
   };
 
@@ -589,7 +658,7 @@ export const SlidesPage: React.FC = () => {
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
-                      Yêu cầu: 3-30 slide (khuyến nghị 10-15 slide cho một bài học)
+                      Yêu cầu: 3-30 slides
                     </p>
                   </div>
 
@@ -608,7 +677,7 @@ export const SlidesPage: React.FC = () => {
                       rows={4}
                       value={aiPrompt}
                       onChange={(e) => setAiPrompt(e.target.value)}
-                      placeholder="Ví dụ: Thêm nhiều hình ảnh minh họa, giải thích đơn giản dễ hiểu cho học sinh, bổ sung ví dụ thực tế..."
+                      placeholder="Ví dụ: Hãy tạo slide với nội dung chi tiết và ví dụ minh họa cụ thể."
                     />
                     <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -686,7 +755,7 @@ export const SlidesPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex-1">
-                <h4 className="text-2xl font-bold text-green-800 mb-2">Tạo slide thành công! 🎉</h4>
+                <h4 className="text-2xl font-bold text-green-800 mb-2">Tạo slide thành công!</h4>
                 <p className="text-base text-green-700">Slide của bạn đã được tạo và sẵn sàng để tải xuống</p>
               </div>
             </div>
@@ -734,7 +803,10 @@ export const SlidesPage: React.FC = () => {
                       a.remove();
                     } catch (error) {
                       console.error('Download failed:', error);
-                      alert('Không thể tải file. Vui lòng thử lại!');
+                      toast.error('Không thể tải file. Vui lòng thử lại!', {
+                        icon: '📥',
+                        duration: 4000,
+                      });
                     }
                   }}
                   className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-xl hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1"
@@ -745,20 +817,6 @@ export const SlidesPage: React.FC = () => {
                   Tải file slide (.pptx)
                 </button>
               </div>
-            )}
-              
-            {result.jsonContent && (
-              <details className="group">
-                <summary className="cursor-pointer text-sm font-semibold text-green-800 hover:text-green-900 select-none flex items-center gap-2 py-2">
-                  <svg className="w-5 h-5 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  Xem nội dung JSON
-                </summary>
-                <pre className="max-h-64 overflow-auto p-4 bg-gray-900 text-green-400 rounded-xl mt-3 text-xs font-mono shadow-inner">
-                  {result.jsonContent}
-                </pre>
-              </details>
             )}
           </div>
         )}
@@ -922,159 +980,253 @@ export const SlidesPage: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {history.map((item, index) => (
-                  <div
-                    key={item.generatedSlideId || index}
-                    className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-primary-400 hover:shadow-lg transition-all duration-300"
-                  >
-                    <div className="flex flex-col lg:flex-row gap-6">
-                      {/* Main Content */}
-                      <div className="flex-1 space-y-4">
-                        {/* Header with badges */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-primary-50 to-primary-100 text-primary-700 text-xs font-bold rounded-lg border border-primary-200">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                            {item.gradeName || 'N/A'}
-                          </span>
-                          {item.generationStatus && (
-                            <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-lg ${
-                              item.generationStatus === 'Hoàn thành' || item.generationStatus === 'Success' || item.generationStatus === 'Completed'
-                                ? 'bg-green-100 text-green-700 border border-green-200'
-                                : item.generationStatus === 'Đã tạo tệp'
-                                ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                                : item.generationStatus === 'Đã tạo dữ liệu'
-                                ? 'bg-cyan-100 text-cyan-700 border border-cyan-200'
-                                : item.generationStatus === 'Processing'
-                                ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
-                                : item.generationStatus === 'Failed'
-                                ? 'bg-red-100 text-red-700 border border-red-200'
-                                : 'bg-gray-100 text-gray-700 border border-gray-200'
-                            }`}>
-                              {item.generationStatus === 'Hoàn thành' ? '✓ Hoàn thành' :
-                               item.generationStatus === 'Đã tạo tệp' ? '📄 Đã tạo tệp' :
-                               item.generationStatus === 'Đã tạo dữ liệu' ? '📊 Đã tạo dữ liệu' :
-                               item.generationStatus === 'Processing' ? '⏳ Đang xử lý' :
-                               item.generationStatus === 'Failed' ? '✗ Thất bại' :
-                               item.generationStatus}
+                  <React.Fragment key={item.generatedSlideId || index}>
+                    <div
+                      className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-primary-400 hover:shadow-lg transition-all duration-300"
+                    >
+                      <div className="flex flex-col lg:flex-row gap-6">
+                        {/* Main Content */}
+                        <div className="flex-1 space-y-4">
+                          {/* Header with badges */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-primary-50 to-primary-100 text-primary-700 text-xs font-bold rounded-lg border border-primary-200">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                              </svg>
+                              {item.gradeName || 'N/A'}
                             </span>
-                          )}
-                        </div>
-
-                        {/* Title and Topic */}
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
-                            {item.syllabusLesson || 'Chưa có tiêu đề'}
-                          </h3>
-                          {item.topicName && (
-                            <p className="text-sm text-gray-600 flex items-center gap-1.5">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                              </svg>
-                              {item.topicName}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-gray-200">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
-                              <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                              </svg>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500">Số slide</p>
-                              <p className="text-sm font-bold text-gray-900">{item.slideCount || 0}</p>
-                            </div>
+                            {item.generationStatus && (
+                              <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-bold rounded-lg ${
+                                item.generationStatus === 'Hoàn thành' || item.generationStatus === 'Success' || item.generationStatus === 'Completed'
+                                  ? 'bg-green-100 text-green-700 border border-green-200'
+                                  : item.generationStatus === 'Đã tạo tệp'
+                                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                                  : item.generationStatus === 'Đã tạo dữ liệu'
+                                  ? 'bg-cyan-100 text-cyan-700 border border-cyan-200'
+                                  : item.generationStatus === 'Processing'
+                                  ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                                  : item.generationStatus === 'Failed'
+                                  ? 'bg-red-100 text-red-700 border border-red-200'
+                                  : 'bg-gray-100 text-gray-700 border border-gray-200'
+                              }`}>
+                                {item.generationStatus === 'Hoàn thành' ? '✓ Hoàn thành' :
+                                 item.generationStatus === 'Đã tạo tệp' ? '📄 Đã tạo tệp' :
+                                 item.generationStatus === 'Đã tạo dữ liệu' ? '📊 Đã tạo dữ liệu' :
+                                 item.generationStatus === 'Processing' ? '⏳ Đang xử lý' :
+                                 item.generationStatus === 'Failed' ? '✗ Thất bại' :
+                                 item.generationStatus}
+                              </span>
+                            )}
                           </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500">Ngày tạo</p>
-                              <p className="text-sm font-bold text-gray-900">
-                                {item.generatedAt ? new Date(item.generatedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+
+                          {/* Title and Topic */}
+                          <div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
+                              {item.syllabusLesson || 'Chưa có tiêu đề'}
+                            </h3>
+                            {item.topicName && (
+                              <p className="text-sm text-gray-600 flex items-center gap-1.5">
+                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                                {item.topicName}
                               </p>
-                            </div>
+                            )}
                           </div>
 
-                          {item.fileSize && (
+                          {/* Stats Grid */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-gray-200">
                             <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
-                                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                                <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                 </svg>
                               </div>
                               <div>
-                                <p className="text-xs text-gray-500">Kích thước</p>
+                                <p className="text-xs text-gray-500">Số slide</p>
+                                <p className="text-sm font-bold text-gray-900">{item.slideCount || 0}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="text-xs text-gray-500">Ngày tạo</p>
                                 <p className="text-sm font-bold text-gray-900">
-                                  {(item.fileSize / 1024 / 1024).toFixed(1)} MB
+                                  {item.generatedAt ? new Date(item.generatedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
                                 </p>
                               </div>
                             </div>
-                          )}
 
-                          {item.processingTime && (
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
-                                <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
+                            {item.fileSize && (
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                                  <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Kích thước</p>
+                                  <p className="text-sm font-bold text-gray-900">
+                                    {(item.fileSize / 1024 / 1024).toFixed(1)} MB
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-xs text-gray-500">Thời gian</p>
-                                <p className="text-sm font-bold text-gray-900">{item.processingTime}s</p>
+                            )}
+
+                            {item.processingTime && (
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center">
+                                  <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Thời gian</p>
+                                  <p className="text-sm font-bold text-gray-900">{item.processingTime}s</p>
+                                </div>
                               </div>
+                            )}
+                          </div>
+
+                          {/* Learning Objectives Preview */}
+                          {item.learningObjectives && (
+                            <div className="pt-2">
+                              <p className="text-xs text-gray-500 mb-1">Mục tiêu bài học:</p>
+                              <p className="text-sm text-gray-700 line-clamp-2">{item.learningObjectives}</p>
                             </div>
                           )}
                         </div>
 
-                        {/* Learning Objectives Preview */}
-                        {item.learningObjectives && (
-                          <div className="pt-2">
-                            <p className="text-xs text-gray-500 mb-1">Mục tiêu bài học:</p>
-                            <p className="text-sm text-gray-700 line-clamp-2">{item.learningObjectives}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex lg:flex-col gap-2 lg:w-36">
-                        {item.filePath && (
-                          <button
-                            onClick={async () => {
-                              try {
-                                const blob = await slideService.downloadFileByPath(item.filePath!);
-                                const url = globalThis.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `slide-${item.generatedSlideId}.pptx`;
-                                document.body.appendChild(a);
-                                a.click();
-                                globalThis.URL.revokeObjectURL(url);
-                                a.remove();
-                              } catch (error) {
-                                console.error('Download failed:', error);
-                                alert('Không thể tải file. Vui lòng thử lại!');
-                              }
-                            }}
-                            className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all text-sm font-semibold shadow-md hover:shadow-lg"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Tải xuống
-                          </button>
-                        )}
+                        {/* Action Buttons */}
+                        <div className="flex lg:flex-col gap-2 lg:w-36">
+                          {item.filePath && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const blob = await slideService.downloadFileByPath(item.filePath!);
+                                  const url = globalThis.URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = `slide-${item.generatedSlideId}.pptx`;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  globalThis.URL.revokeObjectURL(url);
+                                  a.remove();
+                                } catch (error) {
+                                  console.error('Download failed:', error);
+                                  toast.error('Không thể tải file. Vui lòng thử lại!', {
+                                    icon: '📥',
+                                    duration: 4000,
+                                  });
+                                }
+                              }}
+                              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all text-sm font-semibold shadow-md hover:shadow-lg"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Tải xuống
+                            </button>
+                          )}
+                          
+                          {item.processingTime !== 0 && (
+                            <button
+                              onClick={() => handleStartChangeTemplate(item.generatedSlideId)}
+                              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-semibold shadow-md hover:shadow-lg"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                              </svg>
+                              Đổi template
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
+
+                    {/* Change Template Section - Show inline under this slide */}
+                    {changingSlideId === item.generatedSlideId && (
+                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 animate-fadeIn">
+                        <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 text-white font-bold text-base shadow-lg">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                              </svg>
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-900">Đổi template cho slide</h3>
+                              <p className="text-sm text-gray-600">Chọn template mới - slide sẽ được tạo lại</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={handleCancelChangeTemplate}
+                            className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-white font-medium transition-all"
+                          >
+                            Hủy
+                          </button>
+                        </div>
+
+                        <TemplateSelector
+                          templates={changeTemplates}
+                          selectedTemplateId={changeSelectedTemplate}
+                          onSelectTemplate={setChangeSelectedTemplate}
+                          loading={loadingChangeTemplates}
+                          actionButtons={(template) => (
+                            <Card className="border-2 border-blue-200 shadow-lg animate-fadeIn">
+                              <CardContent className="p-6">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-700 mb-1">Template đã chọn</p>
+                                    <p className="text-lg font-bold text-blue-700">
+                                      {template.templateName}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-3">
+                                    <Button
+                                      variant="outline"
+                                      onClick={handleCancelChangeTemplate}
+                                      disabled={changingTemplate}
+                                      className="px-6 py-3 font-semibold"
+                                    >
+                                      Hủy
+                                    </Button>
+                                    <Button
+                                      onClick={handleConfirmChangeTemplate}
+                                      disabled={changingTemplate}
+                                      className="px-6 py-3 font-semibold"
+                                    >
+                                      {changingTemplate ? (
+                                        <span className="flex items-center gap-2">
+                                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                          </svg>
+                                          Đang đổi template...
+                                        </span>
+                                      ) : (
+                                        <span className="flex items-center gap-2">
+                                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                          Xác nhận đổi template
+                                        </span>
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+                        />
+                      </div>
+                    )}
+                  </React.Fragment>
                 ))}
               </div>
             )}

@@ -236,6 +236,24 @@ export const slideService = {
     );
     return response.data;
   },
+
+  /**
+   * Change slide template
+   */
+  async changeSlideTemplate(slideId: string, templateId: string): Promise<void> {
+    await axiosInstance.post(
+      API_ENDPOINTS.SLIDES.CHANGE_TEMPLATE,
+      { 
+        slideId: slideId,
+        templateId 
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  },
 };
 
 export default slideService;
