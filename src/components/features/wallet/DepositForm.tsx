@@ -61,7 +61,6 @@ export const DepositForm: React.FC = () => {
         console.log(user.id,numAmount);
 
       const depositUrl = await walletService.createDepositUrl({
-        userId: user.id,
         amount: numAmount,
       });
 

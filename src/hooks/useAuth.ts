@@ -64,7 +64,7 @@ export const useRegister = () => {
       // so no payload is required. Don't block registration on wallet creation
       // failure, but log for debugging.
       try {
-        await walletService.createWallet(undefined);
+        await walletService.createWallet();
       } catch (walletErr) {
         // eslint-disable-next-line no-console
         console.warn('Wallet creation failed after register:', walletErr);

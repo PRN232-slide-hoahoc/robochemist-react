@@ -115,35 +115,19 @@ export class ExamService {
   }
 
   /**
-   * Get all matrix names (basic info only, faster than full matrices)
+   * Get all matrix names (basic info only)
    */
-  static async getAllMatrixNames(forceRefresh = false): Promise<MatrixBasic[]> {
-    // Check cache first (unless force refresh)
-    if (!forceRefresh) {
-      const cached = this.getCachedMatrixNames();
-      if (cached) {
-        return cached.data;
-      }
-    }
-
+  static async getAllMatrixNames(): Promise<MatrixBasic[]> {
     try {
-      console.log('[ExamService] Fetching matrix names from API:', API_ENDPOINTS.EXAM.MATRICES_NAMES);
-      const startTime = Date.now();
-      
       const response = await axiosInstance.get<MatrixBasicListResponse>(
         API_ENDPOINTS.EXAM.MATRICES_NAMES
       );
-      
-      const duration = Date.now() - startTime;
-      console.log(`[ExamService] Matrix names loaded in ${duration}ms`);
-      
-      console.log('[ExamService] Matrix names response:', response.data);
       
       // Handle different response structures
       const data = response.data?.data ?? response.data;
       
       if (Array.isArray(data)) {
-        const matrices = data.map((item: any) => ({
+        return data.map((item: any) => ({
           matrixId: item.matrixId ?? item.id ?? '',
           name: item.name ?? item.matrixName ?? 'Chưa đặt tên',
           totalQuestion: item.totalQuestion ?? 0,
@@ -151,19 +135,11 @@ export class ExamService {
           createdAt: item.createdAt ?? '',
           createdBy: item.createdBy ?? '',
         }));
-        
-        // Cache the result
-        this.setCachedMatrixNames(matrices);
-        
-        return matrices;
       }
       
       return [];
     } catch (error: any) {
       console.error('[ExamService] Error fetching matrix names:', error);
-      console.error('[ExamService] Error response:', error?.response);
-      console.error('[ExamService] Error status:', error?.response?.status);
-      console.error('[ExamService] Error data:', error?.response?.data);
       throw new Error(error?.response?.data?.message || 'Không thể tải danh sách ma trận đề thi');
     }
   }
@@ -558,6 +534,51 @@ export class ExamService {
     } catch (error: any) {
       console.error('Error downloading exam:', error);
       throw new Error(error?.response?.data?.message || 'Không thể tải xuống đề thi');
+    }
+  }
+
+  /**
+   * Download file using objectKey from TemplateService
+   */
+  static async downloadFileByObjectKey(objectKey: string): Promise<void> {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.TEMPLATE.FILES_DOWNLOAD,
+        {
+          params: { objectKey },
+          responseType: 'blob',
+        }
+      );
+      
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data], { 
+        type: response.headers['content-type'] || 'application/octet-stream' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from Content-Disposition header or use filename from objectKey
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = objectKey.split('/').pop() || 'download';
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]|^\s+|\s+$/g, '');
+        }
+      }
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Error downloading file:', error);
+      throw new Error(error?.response?.data?.message || 'Không thể tải xuống file');
     }
   }
 }
