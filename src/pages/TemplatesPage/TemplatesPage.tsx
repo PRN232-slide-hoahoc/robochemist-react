@@ -666,7 +666,7 @@ export const TemplatesPage: React.FC = () => {
                       title={`Preview: ${previewTemplate.templateName}`}
                     />
                     {previewTemplate.isPremium && (
-                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                      <div className="absolute bottom-0 right-0">
                         <div className="bg-white/95 backdrop-blur-sm text-gray-900 px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-xl border-2 border-primary-200">
                           <Lock className="w-5 h-5 text-amber-600" />
                           Template Premium - Chỉ xem trước

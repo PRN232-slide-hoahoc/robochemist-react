@@ -45,13 +45,14 @@ export const SyllabusManagement: React.FC = () => {
     if (selectedGrade) {
       const filtered = topics.filter(t => t.gradeId === selectedGrade);
       setFilteredTopics(filtered);
-      if (!filtered.find(t => t.id === selectedTopic)) {
+      // Reset selected topic if it's not in the filtered list
+      if (selectedTopic && !filtered.find(t => t.id === selectedTopic)) {
         setSelectedTopic('');
       }
     } else {
       setFilteredTopics(topics);
     }
-  }, [selectedGrade, topics, selectedTopic]);
+  }, [selectedGrade, topics]);
 
   const loadData = async () => {
     try {
@@ -72,7 +73,9 @@ export const SyllabusManagement: React.FC = () => {
 
   const loadSyllabuses = async () => {
     try {
-      const data = await slideService.getSyllabuses(selectedTopic, selectedGrade);
+      console.log('Loading syllabuses with filters:', { selectedGrade, selectedTopic });
+      const data = await slideService.getSyllabuses(selectedGrade, selectedTopic);
+      console.log('Loaded syllabuses:', data);
       setSyllabuses(data);
     } catch (error) {
       console.error('Failed to load syllabuses:', error);

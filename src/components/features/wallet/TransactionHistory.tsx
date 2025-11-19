@@ -7,7 +7,8 @@ export const TransactionHistory: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string>('all');
+  const [transactionTypeFilter, setTransactionTypeFilter] = useState<string>('all');
+  const [referenceTypeFilter, setReferenceTypeFilter] = useState<string>('all');
 
   const fetchTransactions = async () => {
     try {
@@ -89,8 +90,19 @@ export const TransactionHistory: React.FC = () => {
   };
 
   const filteredTransactions = transactions.filter((transaction) => {
-    if (filter === 'all') return true;
-    return transaction.transactionType === filter;
+    // Filter by transaction type
+    let matchTransactionType = true;
+    if (transactionTypeFilter !== 'all') {
+      matchTransactionType = transaction.transactionType === transactionTypeFilter;
+    }
+    
+    // Filter by reference type (only for payment transactions)
+    let matchReferenceType = true;
+    if (referenceTypeFilter !== 'all') {
+      matchReferenceType = transaction.transactionType === 'Thanh toán' && transaction.referenceType === referenceTypeFilter;
+    }
+    
+    return matchTransactionType && matchReferenceType;
   });
 
   if (loading) {
@@ -135,48 +147,51 @@ export const TransactionHistory: React.FC = () => {
         </Button>
       </div>
 
-      {/* Filter buttons */}
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-3 py-1 text-sm rounded-full transition-colors ${
-            filter === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Tất cả
-        </button>
-        <button
-          onClick={() => setFilter('Nạp tiền')}
-          className={`px-3 py-1 text-sm rounded-full transition-colors ${
-            filter === 'Nạp tiền'
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Nạp tiền
-        </button>
-        <button
-          onClick={() => setFilter('Thanh toán')}
-          className={`px-3 py-1 text-sm rounded-full transition-colors ${
-            filter === 'Thanh toán'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Thanh toán
-        </button>
-        <button
-          onClick={() => setFilter('Hoàn tiền')}
-          className={`px-3 py-1 text-sm rounded-full transition-colors ${
-            filter === 'Hoàn tiền'
-              ? 'bg-purple-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Hoàn tiền
-        </button>
+      {/* Filter dropdowns */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Transaction Type Filter */}
+        <div>
+          <label htmlFor="transactionType" className="block text-xs font-medium text-gray-700 mb-1">
+            Loại giao dịch
+          </label>
+          <select
+            id="transactionType"
+            value={transactionTypeFilter}
+            onChange={(e) => {
+              setTransactionTypeFilter(e.target.value);
+              // Reset reference type filter when changing transaction type
+              if (e.target.value !== 'all' && e.target.value !== 'Thanh toán') {
+                setReferenceTypeFilter('all');
+              }
+            }}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+          >
+            <option value="all">Tất cả</option>
+            <option value="Nạp tiền">Nạp tiền</option>
+            <option value="Thanh toán">Thanh toán</option>
+            <option value="Hoàn tiền">Hoàn tiền</option>
+          </select>
+        </div>
+
+        {/* Reference Type Filter (Only for Payment) */}
+        {(transactionTypeFilter === 'all' || transactionTypeFilter === 'Thanh toán') && (
+          <div>
+            <label htmlFor="referenceType" className="block text-xs font-medium text-gray-700 mb-1">
+              Dịch vụ
+            </label>
+            <select
+              id="referenceType"
+              value={referenceTypeFilter}
+              onChange={(e) => setReferenceTypeFilter(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            >
+              <option value="all">Tất cả dịch vụ</option>
+              <option value="Tạo slide">Tạo slide</option>
+              <option value="Tạo đề thi">Tạo đề thi</option>
+              <option value="Mua template">Mua template</option>
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Transaction list */}

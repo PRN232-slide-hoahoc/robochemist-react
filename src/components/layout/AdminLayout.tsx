@@ -3,7 +3,6 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
-  Presentation,
   Shield,
   LogOut,
   Menu,
@@ -23,11 +22,6 @@ const navItems: NavItem[] = [
     icon: LayoutDashboard,
     label: 'Tổng quan',
     path: '/admin',
-  },
-  {
-    icon: Presentation,
-    label: 'Quản lý Slides',
-    path: '/admin/slides',
   },
 ];
 

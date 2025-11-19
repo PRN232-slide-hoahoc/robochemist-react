@@ -13,6 +13,7 @@ const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m
 const WalletPage = lazy(() => import('@/pages/WalletPage').then(m => ({ default: m.WalletPage })));
 const PaymentCallbackPage = lazy(() => import('@/pages/PaymentCallbackPage').then(m => ({ default: m.PaymentCallbackPage })));
 const TemplatesPage = lazy(() => import('@/pages/TemplatesPage/TemplatesPage').then(m => ({ default: m.TemplatesPage })));
+const OrdersPage = lazy(() => import('@/pages/OrdersPage/OrdersPage').then(m => ({ default: m.OrdersPage })));
 const SlidesPage = lazy(() => import('@/pages/SlidesPage/SlidesPage').then(m => ({ default: m.SlidesPage })));
 const ExamsPage = lazy(() => import('@/pages/ExamsPage/ExamsPage').then(m => ({ default: m.ExamsPage })));
 const CreateMatrixPage = lazy(() => import('@/pages/CreateMatrixPage').then(m => ({ default: m.CreateMatrixPage })));
@@ -24,10 +25,11 @@ const TemplateManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ d
 const OrderManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.OrderManagement })));
 const QuestionManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.QuestionManagement })));
 const SyllabusManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.SyllabusManagement })));
+const SlideManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.SlideManagement })));
+const TransactionManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.TransactionManagement })));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminDashboard })));
-const AdminSlideManagement = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminSlideManagement })));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -48,6 +50,7 @@ function App() {
             <Route path="/wallet" element={<WalletPage />} />
             <Route path="/payment/callback" element={<PaymentCallbackPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
             <Route path="/slides" element={<SlidesPage />} />
             <Route path="/exams" element={<ExamsPage />} />
             <Route path="/exams/create-matrix" element={<CreateMatrixPage />} />
@@ -66,6 +69,8 @@ function App() {
               <Route path="orders" element={<OrderManagement />} />
               <Route path="questions" element={<QuestionManagement />} />
               <Route path="syllabuses" element={<SyllabusManagement />} />
+              <Route path="slides" element={<SlideManagement />} />
+              <Route path="transactions" element={<TransactionManagement />} />
             </Route>
 
             {/* Admin Routes */}
@@ -78,7 +83,6 @@ function App() {
               }
             >
               <Route index element={<AdminDashboard />} />
-              <Route path="slides" element={<AdminSlideManagement />} />
             </Route>
             
             <Route path="*" element={<NotFoundPage />} />

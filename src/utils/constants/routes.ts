@@ -11,6 +11,7 @@ export const ROUTES = {
   PAYMENT_CALLBACK: '/payment/callback',
   SLIDES: '/slides',
   TEMPLATES: '/templates',
+  ORDERS: '/orders',
   EXAMS: '/exams',
   STAFF: '/staff',
   ADMIN: '/admin',
