@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   HelpCircle,
   BookOpen,
+  Presentation,
 } from 'lucide-react';
 import { useAuthStore } from '@/store';
 
@@ -46,6 +47,11 @@ const navItems: NavItem[] = [
     icon: BookOpen,
     label: 'Nội dung Bài học',
     path: '/staff/syllabuses',
+  },
+  {
+    icon: Presentation,
+    label: 'Quản lý Slides',
+    path: '/staff/slides',
   },
 ];
 

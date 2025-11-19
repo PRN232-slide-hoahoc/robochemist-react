@@ -25,10 +25,10 @@ const TemplateManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ d
 const OrderManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.OrderManagement })));
 const QuestionManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.QuestionManagement })));
 const SyllabusManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.SyllabusManagement })));
+const SlideManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.SlideManagement })));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminDashboard })));
-const AdminSlideManagement = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminSlideManagement })));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -68,6 +68,7 @@ function App() {
               <Route path="orders" element={<OrderManagement />} />
               <Route path="questions" element={<QuestionManagement />} />
               <Route path="syllabuses" element={<SyllabusManagement />} />
+              <Route path="slides" element={<SlideManagement />} />
             </Route>
 
             {/* Admin Routes */}
@@ -80,7 +81,6 @@ function App() {
               }
             >
               <Route index element={<AdminDashboard />} />
-              <Route path="slides" element={<AdminSlideManagement />} />
             </Route>
             
             <Route path="*" element={<NotFoundPage />} />

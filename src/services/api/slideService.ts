@@ -71,17 +71,21 @@ export const slideService = {
   /**
    * Get syllabuses by topic ID (with filtering)
    */
-  async getSyllabuses(topicId?: string, gradeId?: string): Promise<Syllabus[]> {
+  async getSyllabuses(gradeId?: string, topicId?: string): Promise<Syllabus[]> {
     const params = new URLSearchParams();
-    if (topicId) params.append('topicId', topicId);
-    if (gradeId) params.append('gradeId', gradeId);
+    if (gradeId && gradeId.trim()) params.append('gradeId', gradeId);
+    if (topicId && topicId.trim()) params.append('topicId', topicId);
     
     const url = params.toString() 
       ? `${API_ENDPOINTS.SLIDES.SYLLABUSES}?${params.toString()}`
       : API_ENDPOINTS.SLIDES.SYLLABUSES;
     
+    console.log('Fetching syllabuses from:', url);
+    console.log('Query params:', { gradeId, topicId });
+    
     const response = await axiosInstance.get<ApiResponse<Syllabus[]>>(url);
     const data = response.data.data ?? response.data;
+    console.log('Received syllabuses:', data);
     return Array.isArray(data) ? data : [];
   },
 

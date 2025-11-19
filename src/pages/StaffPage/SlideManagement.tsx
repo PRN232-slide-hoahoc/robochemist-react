@@ -15,7 +15,7 @@ import {
 import toast from 'react-hot-toast';
 import { adminSlideService, type SlideDetailDto, type GetSlidesParams } from '@/services/api/adminSlideService';
 
-export const AdminSlideManagement: React.FC = () => {
+export const SlideManagement: React.FC = () => {
   const [slides, setSlides] = useState<SlideDetailDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
