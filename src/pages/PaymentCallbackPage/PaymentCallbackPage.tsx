@@ -15,13 +15,20 @@ export const PaymentCallbackPage: React.FC = () => {
   const [status, setStatus] = useState<PaymentStatus>('processing');
   const [message, setMessage] = useState<string>('Đang xử lý thanh toán...');
   const [paymentInfo, setPaymentInfo] = useState<any>(null);
+  const [isProcessed, setIsProcessed] = useState(false);
 
   useEffect(() => {
-    processPaymentCallback();
-  }, []);
+    // Chỉ xử lý 1 lần duy nhất
+    if (!isProcessed) {
+      processPaymentCallback();
+    }
+  }, [isProcessed]);
 
   const processPaymentCallback = async () => {
     try {
+      // Đánh dấu đã xử lý ngay lập tức để tránh gọi lại
+      setIsProcessed(true);
+
       // Extract VNPay callback parameters
       const callbackParams = extractVNPayParams();
       
@@ -31,22 +38,23 @@ export const PaymentCallbackPage: React.FC = () => {
         return;
       }
 
+      // Check response code from VNPay first
+      const responseCode = callbackParams.vnp_ResponseCode || callbackParams.vnp_TransactionStatus;
+      
       // Store payment info for display
       setPaymentInfo(callbackParams);
 
-      // Send only required parameters to backend
-      const backendPayload = {
-        vnp_Amount: parseInt(callbackParams.vnp_Amount),
-        vnp_OrderInfo: callbackParams.vnp_OrderInfo,
-      };
-
-      // Send callback data to backend
-      await walletService.depositCallback(backendPayload);
-
-      // Check response code from VNPay
-      const responseCode = callbackParams.vnp_ResponseCode || callbackParams.vnp_TransactionStatus;
-      
+      // Chỉ gọi API nếu giao dịch thành công từ VNPay
       if (responseCode === '00') {
+        // Send only required parameters to backend
+        const backendPayload = {
+          vnp_Amount: parseInt(callbackParams.vnp_Amount),
+          vnp_OrderInfo: callbackParams.vnp_OrderInfo,
+        };
+
+        // Send callback data to backend
+        await walletService.depositCallback(backendPayload);
+        
         setStatus('success');
         setMessage('Nạp tiền thành công!');
       } else {
