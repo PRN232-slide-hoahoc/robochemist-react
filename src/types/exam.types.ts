@@ -93,6 +93,9 @@ export interface GeneratedExam {
   examRequestId: string;
   status: string; // 'PENDING' | 'READY' | 'EXPIRED'
   createdAt?: string;
+  exportedQuestionFileName?: string; // ObjectKey for questions file
+  exportedAnswerFileName?: string; // ObjectKey for answers file
+  fileFormat?: string; // 'QUESTIONS' | 'ANSWERS'
   examQuestions: ExamQuestion[];
 }
 

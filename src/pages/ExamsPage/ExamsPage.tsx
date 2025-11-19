@@ -23,7 +23,7 @@ export const ExamsPage: React.FC = () => {
   const [matricesError, setMatricesError] = useState<string | null>(null);
   const [requestsError, setRequestsError] = useState<string | null>(null);
 
-  // Fetch matrices on mount - optimized with cleanup - using names API for faster loading
+  // Fetch matrices on mount
   useEffect(() => {
     let isMounted = true;
     
@@ -67,7 +67,7 @@ export const ExamsPage: React.FC = () => {
     setLoadingMatrices(true);
     setMatricesError(null);
     try {
-      const data = await ExamService.getAllMatrixNames(true); // Force refresh to bypass cache
+      const data = await ExamService.getAllMatrixNames();
       setMatrices(data);
       setMatricesError(null);
       toast.success('Tải lại thành công!');
@@ -182,10 +182,10 @@ export const ExamsPage: React.FC = () => {
     }
   }, [selectedMatrix, user?.id, FIXED_PRICE]);
 
-  const handleDownloadQuestions = useCallback(async (examId: string) => {
+  const handleDownloadQuestions = useCallback(async (objectKey: string) => {
     try {
       setLoading(true);
-      await ExamService.downloadExamQuestions(examId);
+      await ExamService.downloadFileByObjectKey(objectKey);
       toast.success('Đang tải xuống đề thi...');
     } catch (err: any) {
       toast.error(err.message || 'Không thể tải xuống đề thi');
@@ -194,10 +194,10 @@ export const ExamsPage: React.FC = () => {
     }
   }, []);
 
-  const handleDownloadAnswers = useCallback(async (examId: string) => {
+  const handleDownloadAnswers = useCallback(async (objectKey: string) => {
     try {
       setLoading(true);
-      await ExamService.downloadAnswerKey(examId);
+      await ExamService.downloadFileByObjectKey(objectKey);
       toast.success('Đang tải xuống đáp án...');
     } catch (err: any) {
       toast.error(err.message || 'Không thể tải xuống đáp án');
@@ -206,47 +206,7 @@ export const ExamsPage: React.FC = () => {
     }
   }, []);
 
-  const handleDownload = useCallback(async (examId: string) => {
-    try {
-      setLoading(true);
-      await ExamService.downloadExam(examId);
-      toast.success('Đang tải xuống đề thi...');
-    } catch (err: any) {
-      toast.error(err.message || 'Không thể tải xuống đề thi');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
-  const handleDownloadByRequest = useCallback(async (examRequestId: string, type: 'questions' | 'answers' | 'full' = 'full') => {
-    try {
-      setLoading(true);
-      
-      // Get exam request details to find generated exam ID
-      const request = await ExamService.getExamRequestById(examRequestId);
-      
-      if (request.generatedExams && request.generatedExams.length > 0) {
-        const examId = request.generatedExams[0].generatedExamId;
-        
-        if (type === 'questions') {
-          await ExamService.downloadExamQuestions(examId);
-          toast.success('Đang tải xuống đề thi...');
-        } else if (type === 'answers') {
-          await ExamService.downloadAnswerKey(examId);
-          toast.success('Đang tải xuống đáp án...');
-        } else {
-          await ExamService.downloadExam(examId);
-          toast.success('Đang tải xuống đề thi...');
-        }
-      } else {
-        toast.error('Chưa có đề thi nào được tạo cho yêu cầu này');
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Không thể tải xuống đề thi');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const getStatusBadgeColor = useCallback((status?: string) => {
     switch (status) {
@@ -308,7 +268,7 @@ export const ExamsPage: React.FC = () => {
                   <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                     <span>Đang tải danh sách ma trận...</span>
-                    <span className="text-xs text-gray-400">(Backend đang xử lý, có thể mất 5-10s)</span>
+
                   </div>
                 ) : matricesError ? (
                   <div className="space-y-2">
@@ -443,46 +403,52 @@ export const ExamsPage: React.FC = () => {
                       {r.status === 'Completed' ? (
                         <>
                           {r.generatedExams && r.generatedExams.length > 0 ? (
-                            // Có dữ liệu generatedExams - hiện 2 nút download
-                            r.generatedExams.map((exam: any) => (
-                              <div key={exam.generatedExamId || exam.id} className="flex gap-2">
-                                <Button 
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => handleDownloadQuestions(exam.generatedExamId || exam.id)}
-                                  disabled={loading}
-                                >
-                                  📄 Tải đề
-                                </Button>
-                                <Button 
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDownloadAnswers(exam.generatedExamId || exam.id)}
-                                  disabled={loading}
-                                >
-                                  ✅ Tải đáp án
-                                </Button>
-                              </div>
-                            ))
-                          ) : (
-                            // Status = Completed nhưng chưa có generatedExams - cũng hiện 2 nút nhưng dùng requestId
                             <div className="flex gap-2">
-                              <Button 
-                                variant="primary"
-                                size="sm"
-                                onClick={() => handleDownloadByRequest(r.examRequestId, 'questions')}
-                                disabled={loading}
-                              >
-                                📄 Tải đề
-                              </Button>
-                              <Button 
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDownloadByRequest(r.examRequestId, 'answers')}
-                                disabled={loading}
-                              >
-                                ✅ Tải đáp án
-                              </Button>
+                              {/* Tìm file đề thi (QUESTIONS) */}
+                              {(() => {
+                                const questionFile = r.generatedExams.find((e: any) => 
+                                  e.fileFormat === 'QUESTIONS' && e.exportedQuestionFileName
+                                );
+                                const answerFile = r.generatedExams.find((e: any) => 
+                                  e.fileFormat === 'ANSWERS' && e.exportedAnswerFileName
+                                );
+                                
+                                return (
+                                  <>
+                                    {questionFile?.exportedQuestionFileName && (
+                                      <Button 
+                                        variant="primary"
+                                        size="sm"
+                                        onClick={() => handleDownloadQuestions(questionFile.exportedQuestionFileName!)}
+                                        disabled={loading}
+                                      >
+                                        📄 Tải đề
+                                      </Button>
+                                    )}
+                                    
+                                    {answerFile?.exportedAnswerFileName && (
+                                      <Button 
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDownloadAnswers(answerFile.exportedAnswerFileName!)}
+                                        disabled={loading}
+                                      >
+                                        ✅ Tải đáp án
+                                      </Button>
+                                    )}
+                                    
+                                    {!questionFile && !answerFile && (
+                                      <div className="text-sm text-gray-500">
+                                        ⏳ Đang tạo file...
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          ) : (
+                            <div className="text-sm text-gray-500">
+                              ⏳ Đang tạo file...
                             </div>
                           )}
                         </>
