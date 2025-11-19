@@ -16,12 +16,13 @@ export interface Transaction {
   method: string;
   status: string;
   referenceId: string | null;
+  referenceType: string | null;
+  description: string | null;
   createAt: string;
   updateAt: string;
 }
 
 export interface DepositRequest {
-  userId: string;
   amount: number;
 }
 export interface DepositCallback {

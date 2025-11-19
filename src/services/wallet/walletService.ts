@@ -55,8 +55,8 @@ class WalletService {
   /**
    * Create wallet for user
    */
-  async createWallet(payload: any): Promise<any> {
-    const resp = await axiosInstance.post<ApiResponse<any>>(endpoints.WALLET.WALLET, payload);
+  async createWallet(): Promise<any> {
+    const resp = await axiosInstance.post<ApiResponse<any>>(endpoints.WALLET.WALLET);
     return resp.data?.data;
   }
 
