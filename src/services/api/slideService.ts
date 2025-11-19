@@ -1,116 +1,16 @@
 import { axiosInstance } from './axios.config';
 import { API_ENDPOINTS } from '@/utils/constants/api';
-
-/**
- * Grade types
- */
-export interface Grade {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-/**
- * Topic types
- */
-export interface Topic {
-  id: string;
-  name: string;
-  gradeId: string;
-  grade?: Grade;
-  sortOrder?: number;
-}
-
-/**
- * Syllabus types
- */
-export interface Syllabus {
-  id: string;
-  lesson: string;
-  topicId: string;
-  topic?: Topic;
-  topicName?: string;
-  isActive?: boolean;
-  lessonOrder?: number;
-}
-
-/**
- * Template types
- */
-export interface Template {
-  id: string;
-  name: string;
-  description?: string;
-  objectKey: string;
-  userId: string;
-  createdAt: string;
-}
-
-/**
- * Slide generation request
- */
-export interface GenerateSlideRequest {
-  syllabusId: string;
-  numberOfSlides: number;
-  aiPrompt?: string;
-  templateId?: string;
-}
-
-/**
- * Slide generation response
- */
-export interface GenerateSlideResponse {
-  generatedSlideId: string;
-  filePath?: string | null;
-  slideCount?: number | null;
-  generationStatus?: string | null;
-  jsonContent?: string | null;
-}
-
-/**
- * Slide detail item (matches backend SlideDetailDto)
- */
-export interface SlideDetailDto {
-  generatedSlideId: string;
-  slideRequestId: string;
-  fileFormat?: string;
-  filePath?: string;
-  fileSize?: number;
-  slideCount?: number;
-  generationStatus?: string;
-  processingTime?: number;
-  generatedAt?: string;
-  // Request information
-  numberOfSlides?: number;
-  aiPrompt?: string;
-  requestStatus?: string;
-  requestedAt?: string;
-  // Syllabus information
-  syllabusId: string;
-  syllabusLesson: string;
-  learningObjectives?: string;
-  lessonOrder?: number;
-  // Topic information
-  topicId: string;
-  topicName: string;
-  topicSortOrder?: number;
-  // Grade information
-  gradeId: string;
-  gradeName: string;
-}
-
-/**
- * Paginated result
- */
-export interface PaginatedResult<T> {
-  items: T[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
-  totalPages: number;
-  hasPreviousPage: boolean;
-  hasNextPage: boolean;
-}
+import type { 
+  Grade, 
+  Topic, 
+  Syllabus, 
+  Template,
+  GenerateSlideRequest,
+  GenerateSlideResponse,
+  SlideDetailDto,
+  PaginatedResult,
+  CreateSyllabusRequest
+} from '@/types/slide.types';
 
 /**
  * API response wrapper
@@ -121,6 +21,19 @@ interface ApiResponse<T> {
   data?: T;
   errors?: string[];
 }
+
+// Re-export types for backward compatibility
+export type { 
+  Grade, 
+  Topic, 
+  Syllabus, 
+  Template,
+  GenerateSlideRequest,
+  GenerateSlideResponse,
+  SlideDetailDto,
+  PaginatedResult,
+  CreateSyllabusRequest
+} from '@/types/slide.types';
 
 /**
  * Slide Service - Handles all slide-related API calls
@@ -158,14 +71,60 @@ export const slideService = {
   /**
    * Get syllabuses by topic ID (with filtering)
    */
-  async getSyllabuses(topicId?: string): Promise<Syllabus[]> {
-    const url = topicId 
-      ? `${API_ENDPOINTS.SLIDES.SYLLABUSES}?topicId=${topicId}`
+  async getSyllabuses(topicId?: string, gradeId?: string): Promise<Syllabus[]> {
+    const params = new URLSearchParams();
+    if (topicId) params.append('topicId', topicId);
+    if (gradeId) params.append('gradeId', gradeId);
+    
+    const url = params.toString() 
+      ? `${API_ENDPOINTS.SLIDES.SYLLABUSES}?${params.toString()}`
       : API_ENDPOINTS.SLIDES.SYLLABUSES;
     
     const response = await axiosInstance.get<ApiResponse<Syllabus[]>>(url);
     const data = response.data.data ?? response.data;
     return Array.isArray(data) ? data : [];
+  },
+
+  /**
+   * Get syllabus by ID
+   */
+  async getSyllabusById(id: string): Promise<Syllabus> {
+    const response = await axiosInstance.get<ApiResponse<Syllabus>>(
+      API_ENDPOINTS.SLIDES.SYLLABUS_BY_ID(id)
+    );
+    return (response.data.data ?? response.data) as Syllabus;
+  },
+
+  /**
+   * Create new syllabus
+   */
+  async createSyllabus(request: CreateSyllabusRequest): Promise<Syllabus> {
+    const response = await axiosInstance.post<ApiResponse<Syllabus>>(
+      API_ENDPOINTS.SLIDES.SYLLABUSES,
+      request
+    );
+    return (response.data.data ?? response.data) as Syllabus;
+  },
+
+  /**
+   * Update syllabus
+   */
+  async updateSyllabus(id: string, request: CreateSyllabusRequest): Promise<Syllabus> {
+    const response = await axiosInstance.put<ApiResponse<Syllabus>>(
+      API_ENDPOINTS.SLIDES.SYLLABUS_BY_ID(id),
+      request
+    );
+    return (response.data.data ?? response.data) as Syllabus;
+  },
+
+  /**
+   * Toggle syllabus status
+   */
+  async toggleSyllabusStatus(id: string): Promise<boolean> {
+    const response = await axiosInstance.patch<ApiResponse<boolean>>(
+      API_ENDPOINTS.SLIDES.SYLLABUS_TOGGLE_STATUS(id)
+    );
+    return response.data.data ?? false;
   },
 
   /**
@@ -219,7 +178,7 @@ export const slideService = {
    * Generate slides
    */
   async generateSlide(request: GenerateSlideRequest): Promise<GenerateSlideResponse> {
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       syllabusId: request.syllabusId,
       numberOfSlides: request.numberOfSlides,
       templateId: request.templateId,
@@ -245,7 +204,7 @@ export const slideService = {
     
     console.log('Generate slide response:', response.data);
     
-    return response.data.data ?? response.data as any;
+    return (response.data.data ?? response.data) as GenerateSlideResponse;
   },
 
   /**
