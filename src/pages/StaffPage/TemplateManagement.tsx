@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  CheckCircle,
 } from 'lucide-react';
 import { templateService } from '@/services/template/templateService';
 import type { Template, TemplateFilters } from '@/types/template.types';
@@ -189,26 +190,37 @@ export const TemplateManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = (template: Template) => {
+  const handleToggleActive = (template: Template) => {
     setDeletingTemplate(template);
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = async () => {
+  const confirmToggleActive = async () => {
     if (!deletingTemplate) return;
 
-    try {
-      const loadingToast = toast.loading('Đang vô hiệu hóa template...');
-      
-      await templateService.deleteTemplate(deletingTemplate.templateId);
+    const isActivating = !deletingTemplate.isActive;
+    const action = isActivating ? 'kích hoạt' : 'vô hiệu hóa';
 
-      toast.success('Vô hiệu hóa template thành công!', { id: loadingToast });
+    try {
+      const loadingToast = toast.loading(`Đang ${action} template...`);
+      
+      // Update template with toggled IsActive status
+      await templateService.updateTemplate(deletingTemplate.templateId, {
+        templateName: deletingTemplate.templateName,
+        description: deletingTemplate.description,
+        slideCount: deletingTemplate.slideCount,
+        isPremium: deletingTemplate.isPremium,
+        price: deletingTemplate.price,
+        isActive: isActivating
+      });
+
+      toast.success(`${isActivating ? 'Kích hoạt' : 'Vô hiệu hóa'} template thành công!`, { id: loadingToast });
       setShowDeleteConfirm(false);
       setDeletingTemplate(null);
       fetchTemplates();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Vô hiệu hóa thất bại');
-      console.error('Delete error:', error);
+      toast.error(error.response?.data?.message || `${action} thất bại`);
+      console.error('Toggle active error:', error);
     }
   };
 
@@ -566,11 +578,19 @@ export const TemplateManagement: React.FC = () => {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(template)}
-                          className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
-                          title="Xóa"
+                          onClick={() => handleToggleActive(template)}
+                          className={`p-2 rounded-lg transition-all duration-200 ${
+                            template.isActive
+                              ? 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                              : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                          }`}
+                          title={template.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {template.isActive ? (
+                            <Trash2 className="w-4 h-4" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -1071,7 +1091,7 @@ export const TemplateManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Custom Delete Confirmation Dialog */}
+      {/* Custom Toggle Active Confirmation Dialog */}
       {showDeleteConfirm && deletingTemplate && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <motion.div
@@ -1080,27 +1100,26 @@ export const TemplateManagement: React.FC = () => {
             exit={{ opacity: 0, scale: 0.9 }}
             className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
           >
-            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
-              <Trash2 className="w-8 h-8 text-red-600" />
+            <div className={`flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full ${
+              deletingTemplate.isActive ? 'bg-red-100' : 'bg-green-100'
+            }`}>
+              {deletingTemplate.isActive ? (
+                <Trash2 className="w-8 h-8 text-red-600" />
+              ) : (
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              )}
             </div>
             
             <h3 className="text-xl font-bold text-slate-900 text-center mb-2">
-              Vô hiệu hóa Template
+              {deletingTemplate.isActive ? 'Vô hiệu hóa Template' : 'Kích hoạt Template'}
             </h3>
             
             <p className="text-slate-600 text-center mb-1">
-              Bạn có chắc chắn muốn vô hiệu hóa template
+              Bạn có chắc chắn muốn {deletingTemplate.isActive ? 'vô hiệu hóa' : 'kích hoạt'} template
             </p>
-            <p className="text-slate-900 font-semibold text-center mb-4">
+            <p className="text-slate-900 font-semibold text-center mb-6">
               "{deletingTemplate.templateName}"?
             </p>
-            
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
-              <p className="text-sm text-amber-800">
-                <span className="font-semibold">Lưu ý:</span> Template sẽ được soft delete (IsActive = false). 
-                Bạn có thể khôi phục lại bằng cách chỉnh sửa và bật lại trạng thái.
-              </p>
-            </div>
 
             <div className="flex gap-3">
               <button
@@ -1113,10 +1132,14 @@ export const TemplateManagement: React.FC = () => {
                 Hủy
               </button>
               <button
-                onClick={confirmDelete}
-                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg"
+                onClick={confirmToggleActive}
+                className={`flex-1 px-4 py-3 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg ${
+                  deletingTemplate.isActive 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
               >
-                Vô hiệu hóa
+                {deletingTemplate.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
               </button>
             </div>
           </motion.div>
