@@ -23,6 +23,7 @@ const StaffDashboard = lazy(() => import('@/pages/StaffPage').then(m => ({ defau
 const TemplateManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.TemplateManagement })));
 const OrderManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.OrderManagement })));
 const QuestionManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.QuestionManagement })));
+const SyllabusManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.SyllabusManagement })));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminDashboard })));
@@ -64,6 +65,7 @@ function App() {
               <Route path="templates" element={<TemplateManagement />} />
               <Route path="orders" element={<OrderManagement />} />
               <Route path="questions" element={<QuestionManagement />} />
+              <Route path="syllabuses" element={<SyllabusManagement />} />
             </Route>
 
             {/* Admin Routes */}
