@@ -10,6 +10,7 @@ export interface WalletDto {
 export interface Transaction {
   transactionId: string;
   userId: string;
+  userName: string | null;
   walletId: string;
   transactionType: string;
   amount: number;
