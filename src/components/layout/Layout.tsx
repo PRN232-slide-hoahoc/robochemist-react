@@ -30,9 +30,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           // Attempt to create the wallet for the current user.
           try {
             if (user?.id) {
-              await walletService.createWallet({ userId: user.id });
+              await walletService.createWallet();
             } else {
-              await walletService.createWallet({});
+              await walletService.createWallet();
             }
             // Re-fetch balance once after creation (best-effort)
             await walletService.getBalance();

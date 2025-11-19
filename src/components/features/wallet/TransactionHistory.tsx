@@ -68,6 +68,26 @@ export const TransactionHistory: React.FC = () => {
     return typeMap[type] || { label: type, icon: '•', color: 'text-gray-600' };
   };
 
+  const getTransactionDetails = (transaction: Transaction) => {
+    if (transaction.referenceId && transaction.transactionType === 'Thanh toán') {
+      return (
+        <p className="text-xs text-green-600 mt-1">
+          {transaction.referenceType}
+        </p>
+      );
+    }
+    
+    if (transaction.description && transaction.transactionType === 'Hoàn tiền') {
+      return (
+        <p className="text-xs text-purple-600 mt-1">
+          {transaction.description}
+        </p>
+      );
+    }
+    
+    return null;
+  };
+
   const filteredTransactions = transactions.filter((transaction) => {
     if (filter === 'all') return true;
     return transaction.transactionType === filter;
@@ -189,8 +209,9 @@ export const TransactionHistory: React.FC = () => {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-3">
                     <div>
-                      <p className="font-medium text-gray-900">{typeInfo.label}</p>
+                      <p className="font-medium text-gray-900">{typeInfo.label} </p>
                       <p className="text-xs text-gray-500">{formatDate(transaction.createAt)}</p>
+                      {getTransactionDetails(transaction)}
                     </div>
                   </div>
                   <div className="text-right">
