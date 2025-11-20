@@ -1,5 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
+import { templateService } from '@/services/template/templateService';
+import toast from 'react-hot-toast';
+import { X, FileText, Download, Star, Lock } from 'lucide-react';
 
 export interface UserTemplateResponse {
   templateId: string;
@@ -35,6 +38,10 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   actionButtons,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<UserTemplateResponse | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   // Filter templates based on search term
   const filteredTemplates = useMemo(() => {
@@ -47,15 +54,23 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     );
   }, [templates, searchTerm]);
 
-  const handlePreview = (template: UserTemplateResponse, e: React.MouseEvent) => {
+  const handlePreview = async (template: UserTemplateResponse, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent template selection
     
-    if (template.previewUrl) {
-      window.open(template.previewUrl, '_blank', 'noopener,noreferrer');
-    } else if (template.thumbnailUrl) {
-      window.open(template.thumbnailUrl, '_blank', 'noopener,noreferrer');
-    } else {
-      alert('Không có URL xem trước cho template này');
+    setPreviewTemplate(template);
+    setShowPreviewModal(true);
+    setLoadingPreview(true);
+    setPreviewUrl('');
+
+    try {
+      const url = await templateService.getPresignedUrl(template.templateId);
+      setPreviewUrl(url);
+    } catch (error: any) {
+      toast.error('Không thể tải preview');
+      console.error('Preview error:', error);
+      setPreviewUrl('');
+    } finally {
+      setLoadingPreview(false);
     }
   };
 
@@ -255,6 +270,112 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             )}
           </React.Fragment>
           ))}
+        </div>
+      )}
+
+      {/* Preview Modal */}
+      {showPreviewModal && previewTemplate && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowPreviewModal(false);
+            setPreviewTemplate(null);
+            setPreviewUrl('');
+          }}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full h-[90vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex-shrink-0 bg-gradient-to-r from-primary-600 to-primary-700 text-white px-8 py-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h2 className="text-2xl font-bold">{previewTemplate.templateName}</h2>
+                    {previewTemplate.isPremium && (
+                      <span className="bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1.5">
+                        <Star className="w-4 h-4 fill-current" />
+                        Premium
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 text-primary-100">
+                    <span className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      {previewTemplate.slideCount} slides
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <Download className="w-4 h-4" />
+                      {previewTemplate.downloadCount} lượt tải
+                    </span>
+                    {previewTemplate.isPremium && (
+                      <span className="text-yellow-300 font-bold text-lg">
+                        {previewTemplate.price.toLocaleString('vi-VN')}đ
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowPreviewModal(false);
+                    setPreviewTemplate(null);
+                    setPreviewUrl('');
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-hidden bg-gray-100 relative">
+              {loadingPreview ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="bg-white rounded-2xl p-8 shadow-xl text-center">
+                    <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full mx-auto mb-4 animate-spin" />
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">
+                      Đang tải preview...
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Vui lòng đợi trong giây lát
+                    </p>
+                  </div>
+                </div>
+              ) : previewUrl ? (
+                <div className="w-full h-full relative">
+                  <iframe
+                    src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+                      previewUrl
+                    )}`}
+                    className="w-full h-full border-0"
+                    title={`Preview: ${previewTemplate.templateName}`}
+                  />
+                  {previewTemplate.isPremium && (
+                    <div className="absolute bottom-0 right-0">
+                      <div className="bg-white/95 backdrop-blur-sm text-gray-900 px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-xl border-2 border-primary-200">
+                        <Lock className="w-5 h-5 text-amber-600" />
+                        Template Premium - Chỉ xem trước
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center bg-white rounded-2xl p-8 shadow-xl">
+                    <X className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">
+                      Không thể tải preview
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Vui lòng thử lại sau
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
