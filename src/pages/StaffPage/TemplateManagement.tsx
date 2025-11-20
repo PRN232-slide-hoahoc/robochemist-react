@@ -45,8 +45,6 @@ export const TemplateManagement: React.FC = () => {
     pageNumber: 1,
     pageSize: 10,
     searchTerm: '',
-    sortBy: 'createdAt',
-    sortDescending: true,
     isActive: undefined, // undefined = show all templates
   });
 
@@ -277,64 +275,6 @@ export const TemplateManagement: React.FC = () => {
           <Plus className="w-5 h-5" />
           <span className="font-medium">Thêm Template</span>
         </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600 font-medium">Tổng Template</p>
-              <p className="text-3xl font-bold text-slate-900 mt-2">{totalCount}</p>
-            </div>
-            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
-              <FileText className="w-6 h-6 text-slate-700" />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600 font-medium">Template Premium</p>
-              <p className="text-3xl font-bold text-slate-900 mt-2">
-                {templates.filter((t) => t.isPremium).length}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-amber-700" />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600 font-medium">Template Miễn phí</p>
-              <p className="text-3xl font-bold text-slate-900 mt-2">
-                {templates.filter((t) => !t.isPremium).length}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <FileText className="w-6 h-6 text-green-700" />
-            </div>
-          </div>
-        </motion.div>
       </div>
 
       {/* Search and Filter Bar */}
