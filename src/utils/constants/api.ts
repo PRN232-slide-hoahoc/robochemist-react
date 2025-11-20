@@ -54,11 +54,7 @@ export const API_ENDPOINTS = {
     TEMPLATE_UPLOAD: '/template/v1/templates/upload',
     ORDERS: '/template/v1/orders',
     ORDER_BY_ID: (orderId: string) => `/template/v1/orders/${orderId}`,
-    ORDER_BY_NUMBER: (orderNumber: string) => `/template/v1/orders/by-number/${orderNumber}`,
     ORDERS_BY_USER: (userId: string) => `/template/v1/orders/user/${userId}`,
-    ORDER_STATUS: (orderId: string) => `/template/v1/orders/${orderId}/status`,
-    ORDER_CANCEL: (orderId: string) => `/template/v1/orders/${orderId}/cancel`,
-    USER_ORDER_STATS: (userId: string) => `/template/v1/orders/user/${userId}/statistics`,
   },
   WALLET: {
     CREATE_DEPOSIT_URL: '/wallet/v1/wallet/deposit',
