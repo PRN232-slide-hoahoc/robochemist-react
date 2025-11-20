@@ -29,7 +29,7 @@ export const useLogin = () => {
           navigate('/admin');
           break;
         case 'staff':
-          navigate('/staff');
+          navigate('/staff/templates');
           break;
         case 'user':
         default:

@@ -1,12 +1,24 @@
-import React from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { ROUTES } from '@/utils/constants/routes';
+import { Wallet, LogOut, ChevronDown, User } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
   const { isAuthenticated, user, logout } = useAuth();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
@@ -18,9 +30,6 @@ export const Header: React.FC = () => {
               <a href="/" className="text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-300">
                 Trang chủ
               </a>
-              <a href="/dashboard" className="text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-300">
-                Dashboard
-              </a>
               <a href={ROUTES.SLIDES} className="text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-300">
                 Slides
               </a>
@@ -30,32 +39,49 @@ export const Header: React.FC = () => {
               <a href={ROUTES.EXAMS} className="text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-300">
                 Đề thi
               </a>
-              <a href={ROUTES.WALLET} className="text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-300">
-                Ví
-              </a>
             </nav>
           </div>
 
           <div className="flex items-center gap-4">
-            <button
-              onClick={toggleTheme}
-              className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-label="Toggle theme"
-            >
-              {theme === 'light' ? '🌙' : '☀️'}
-            </button>
-
             {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  {user?.fullname}
-                </span>
-                <Button size="sm" variant="ghost" onClick={() => window.location.href = ROUTES.WALLET}>
-                  Ví
-                </Button>
-                <Button size="sm" variant="outline" onClick={logout}>
-                  Đăng xuất
-                </Button>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {user?.fullname}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                    <button
+                      onClick={() => {
+                        window.location.href = ROUTES.WALLET;
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Wallet className="w-4 h-4" />
+                      Ví
+                    </button>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Đăng xuất
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2">
