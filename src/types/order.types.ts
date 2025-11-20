@@ -21,9 +21,8 @@ export interface OrderDetail {
   orderId: string;
   templateId: string;
   templateName: string;
-  quantity: number;
-  unitPrice: number;
   subtotal: number;
+  createdAt: string;
 }
 
 export interface OrderSummary {
@@ -36,14 +35,6 @@ export interface OrderSummary {
   createdAt: string;
 }
 
-export interface OrderStatistics {
-  totalOrders: number;
-  completedOrders: number;
-  pendingOrders: number;
-  cancelledOrders: number;
-  totalSpent: number;
-}
-
 export interface CreateOrderRequest {
   userId: string;
   items: CreateOrderItem[];
@@ -52,12 +43,6 @@ export interface CreateOrderRequest {
 
 export interface CreateOrderItem {
   templateId: string;
-  quantity: number;
-}
-
-export interface UpdateOrderStatusRequest {
-  status: string;
-  paymentTransactionId?: string;
 }
 
 export interface PagedOrderResult {

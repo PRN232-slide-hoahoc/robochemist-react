@@ -13,7 +13,6 @@ const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m
 const WalletPage = lazy(() => import('@/pages/WalletPage').then(m => ({ default: m.WalletPage })));
 const PaymentCallbackPage = lazy(() => import('@/pages/PaymentCallbackPage').then(m => ({ default: m.PaymentCallbackPage })));
 const TemplatesPage = lazy(() => import('@/pages/TemplatesPage/TemplatesPage').then(m => ({ default: m.TemplatesPage })));
-const OrdersPage = lazy(() => import('@/pages/OrdersPage/OrdersPage').then(m => ({ default: m.OrdersPage })));
 const SlidesPage = lazy(() => import('@/pages/SlidesPage/SlidesPage').then(m => ({ default: m.SlidesPage })));
 const ExamsPage = lazy(() => import('@/pages/ExamsPage/ExamsPage').then(m => ({ default: m.ExamsPage })));
 const CreateMatrixPage = lazy(() => import('@/pages/CreateMatrixPage').then(m => ({ default: m.CreateMatrixPage })));
@@ -50,7 +49,6 @@ function App() {
             <Route path="/wallet" element={<WalletPage />} />
             <Route path="/payment/callback" element={<PaymentCallbackPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
-            <Route path="/orders" element={<OrdersPage />} />
             <Route path="/slides" element={<SlidesPage />} />
             <Route path="/exams" element={<ExamsPage />} />
             <Route path="/exams/create-matrix" element={<CreateMatrixPage />} />

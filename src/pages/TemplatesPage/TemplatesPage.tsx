@@ -16,32 +16,39 @@ import {
   Library,
   User,
   ShoppingCart,
+  ShoppingBag,
+  Calendar,
 } from 'lucide-react';
 import { templateService } from '@/services/template/templateService';
-import type { UserTemplate, Template } from '@/types/template.types';
+import { orderService } from '@/services/order/orderService';
+import { useAuthStore } from '@/store/authStore';
+import type { OrderSummary } from '@/types/order.types';
+import type { UserTemplateResponse, Template } from '@/types/template.types';
 import toast from 'react-hot-toast';
 import { Layout } from '@/components/layout/Layout';
 import { Container } from '@/components/layout/Container';
 import { PurchaseTemplateModal } from '@/components/template/PurchaseTemplateModal';
 
-type TabType = 'all' | 'my';
+type TabType = 'all' | 'my' | 'orders';
 
 export const TemplatesPage: React.FC = () => {
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [allTemplates, setAllTemplates] = useState<Template[]>([]);
-  const [myTemplates, setMyTemplates] = useState<UserTemplate[]>([]);
-  const [filteredTemplates, setFilteredTemplates] = useState<(Template | UserTemplate)[]>([]);
+  const [myTemplates, setMyTemplates] = useState<UserTemplateResponse[]>([]);
+  const [orders, setOrders] = useState<OrderSummary[]>([]);
+  const [filteredTemplates, setFilteredTemplates] = useState<(Template | UserTemplateResponse)[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'free' | 'premium'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'name'>('newest');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [previewTemplate, setPreviewTemplate] = useState<Template | UserTemplate | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<Template | UserTemplateResponse | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [purchaseTemplate, setPurchaseTemplate] = useState<Template | UserTemplate | null>(null);
+  const [purchaseTemplate, setPurchaseTemplate] = useState<Template | UserTemplateResponse | null>(null);
   const [ownedTemplateIds, setOwnedTemplateIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -73,13 +80,28 @@ export const TemplatesPage: React.FC = () => {
           // User might not be logged in, ignore error
           setOwnedTemplateIds(new Set());
         }
-      } else {
+      } else if (activeTab === 'my') {
         // Fetch user templates (free + owned premium)
         const data = await templateService.getMyTemplates();
         setMyTemplates(data);
         // Track owned template IDs
         const ownedIds = new Set(data.map(t => t.templateId));
         setOwnedTemplateIds(ownedIds);
+      } else if (activeTab === 'orders') {
+        // Fetch user's purchase history
+        try {
+          if (user?.id) {
+            const ordersData = await orderService.getUserOrders(user.id);
+            // Filter only completed orders with templates
+            const completedOrders = ordersData.filter(o => o.status === 'Hoàn thành');
+            setOrders(completedOrders);
+          } else {
+            toast.error('Vui lòng đăng nhập để xem lịch sử mua hàng');
+          }
+        } catch (err) {
+          toast.error('Không thể tải lịch sử mua hàng');
+          console.error('Error fetching orders:', err);
+        }
       }
     } catch (error: any) {
       toast.error('Không thể tải danh sách template');
@@ -122,7 +144,7 @@ export const TemplatesPage: React.FC = () => {
     setFilteredTemplates(filtered);
   };
 
-  const handleDownload = async (template: Template | UserTemplate) => {
+  const handleDownload = async (template: Template | UserTemplateResponse) => {
     try {
       const blob = await templateService.downloadTemplate(template.templateId);
       const url = window.URL.createObjectURL(blob);
@@ -140,7 +162,7 @@ export const TemplatesPage: React.FC = () => {
     }
   };
 
-  const handlePreview = async (template: Template | UserTemplate) => {
+  const handlePreview = async (template: Template | UserTemplateResponse) => {
     setPreviewTemplate(template);
     setShowPreviewModal(true);
     setLoadingPreview(true);
@@ -162,7 +184,7 @@ export const TemplatesPage: React.FC = () => {
     return ownedTemplateIds.has(templateId);
   };
 
-  const handlePurchase = (template: Template | UserTemplate) => {
+  const handlePurchase = (template: Template | UserTemplateResponse) => {
     setPurchaseTemplate(template);
     setShowPurchaseModal(true);
   };
@@ -218,10 +240,22 @@ export const TemplatesPage: React.FC = () => {
               <User className="w-5 h-5" />
               Template của tôi
             </button>
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+                activeTab === 'orders'
+                  ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <ShoppingBag className="w-5 h-5" />
+              Lịch sử mua
+            </button>
           </div>
         </div>
 
-        {/* Step 1: Search & Filter */}
+        {/* Step 1: Search & Filter - Only show for all and my tabs */}
+        {activeTab !== 'orders' && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -330,8 +364,126 @@ export const TemplatesPage: React.FC = () => {
             </div>
           </div>
         </motion.div>
+        )}
 
-        {/* Step 2: Templates */}
+        {/* Purchase History - Only show for orders tab */}
+        {activeTab === 'orders' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-10 animate-fadeIn"
+        >
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-primary-600 to-primary-700 text-white font-bold shadow-lg">
+              <ShoppingBag className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Lịch sử mua template</h2>
+              <p className="text-gray-600">
+                {orders.length} đơn hàng đã hoàn thành
+              </p>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full mx-auto mb-4 animate-spin" />
+                <p className="text-primary-600 font-semibold">Đang tải lịch sử...</p>
+              </div>
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="bg-gradient-to-br from-primary-50 to-primary-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                <ShoppingBag className="w-12 h-12 text-primary-600" />
+              </div>
+              <p className="text-2xl font-bold text-gray-900 mb-2">Chưa có đơn hàng nào</p>
+              <p className="text-gray-600">Các template bạn mua sẽ hiển thị ở đây</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {orders.map((order, index) => (
+                <motion.div
+                  key={order.orderId}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group"
+                >
+                  {/* Header with gradient background */}
+                  <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2">
+                          <ShoppingBag className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-white/80 text-xs font-medium">Mã đơn hàng</p>
+                          <p className="text-white font-mono font-bold text-sm">
+                            #{order.orderNumber}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-4 py-1.5 bg-green-500 text-white text-xs font-semibold rounded-full shadow-lg flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                          {order.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6">
+                    <div className="flex items-start justify-between gap-6">
+                      {/* Left side - Template info */}
+                      <div className="flex-1 space-y-4">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
+                            {order.templateName || 'Template'}
+                          </h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-4 h-4 text-primary-500" />
+                              <span>
+                                {new Date(order.createdAt).toLocaleDateString('vi-VN', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="w-4 h-4 text-primary-500" />
+                              <span>
+                                {new Date(order.createdAt).toLocaleTimeString('vi-VN', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right side - Price */}
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500 font-medium">Tổng tiền</p>
+                        <p className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
+                          {order.totalAmount.toLocaleString('vi-VN')}₫
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+        )}
+
+        {/* Step 2: Templates - Only show for all and my tabs */}
+        {activeTab !== 'orders' && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -588,6 +740,7 @@ export const TemplatesPage: React.FC = () => {
             </div>
           )}
         </motion.div>
+        )}
       </Container>
 
       {/* Preview Modal */}

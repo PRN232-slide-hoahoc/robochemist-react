@@ -22,24 +22,6 @@ export interface Template {
   version: number;
 }
 
-export interface UserTemplate {
-  templateId: string;
-  objectKey: string;
-  templateName: string;
-  description?: string;
-  thumbnailUrl?: string;
-  previewUrl?: string;
-  contentStructure?: string;
-  slideCount: number;
-  isPremium: boolean;
-  price: number;
-  downloadCount: number;
-  createdAt: string;
-  updatedAt: string;
-  createdBy?: string;
-  version: number;
-}
-
 /**
  * UserTemplateResponse - Returned from GetMyTemplates endpoint
  * Contains complete template information accessible by current user
@@ -79,10 +61,6 @@ export interface UploadTemplateResponse {
   message: string;
 }
 
-export interface GrantTemplateAccessRequest {
-  templateId: string;
-}
-
 export interface PagedResult<T> {
   items: T[];
   totalCount: number;
@@ -94,11 +72,9 @@ export interface PagedResult<T> {
 }
 
 export interface PaginationParams {
-  pageNumber?: number;
-  pageSize?: number;
+  pageNumber: number;
+  pageSize: number;
   searchTerm?: string;
-  sortBy?: string;
-  sortDescending?: boolean;
 }
 
 export interface TemplateFilters extends PaginationParams {

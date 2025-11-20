@@ -156,15 +156,12 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                             {detail.templateName}
                           </h5>
                           <p className="text-sm text-gray-600">
-                            Số lượng: {detail.quantity}
+                            {new Date(detail.createdAt).toLocaleString('vi-VN')}
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-bold text-gray-900">
                             {detail.subtotal.toLocaleString('vi-VN')}đ
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {detail.unitPrice.toLocaleString('vi-VN')}đ/item
                           </p>
                         </div>
                       </div>
