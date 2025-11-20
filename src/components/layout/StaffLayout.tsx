@@ -94,7 +94,7 @@ export const StaffLayout: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-lg font-bold text-slate-900">RoboChemist</h1>
-                  <p className="text-xs text-slate-500">Staff Portal</p>
+                  <p className="text-xs text-slate-500">{user?.role === 'Admin' ? 'Admin Monitor' : 'Staff Portal'}</p>
                 </div>
               </motion.div>
             )}
@@ -226,7 +226,7 @@ export const StaffLayout: React.FC = () => {
                   </div>
                   <div>
                     <h1 className="text-lg font-bold text-slate-900">RoboChemist</h1>
-                    <p className="text-xs text-slate-500">Staff Portal</p>
+                    <p className="text-xs text-slate-500">{user?.role === 'admin' ? 'Admin Monitor' : 'Staff Portal'}</p>
                   </div>
                 </div>
                 <button
