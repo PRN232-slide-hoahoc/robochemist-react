@@ -25,11 +25,6 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    icon: LayoutDashboard,
-    label: 'Tổng quan',
-    path: '/staff',
-  },
-  {
     icon: FileText,
     label: 'Quản lý Template',
     path: '/staff/templates',
@@ -53,6 +48,8 @@ const navItems: NavItem[] = [
     icon: Presentation,
     label: 'Quản lý Slides',
     path: '/staff/slides',
+  },
+  {
     icon: Wallet,
     label: 'Quản lý Giao dịch',
     path: '/staff/transactions',
