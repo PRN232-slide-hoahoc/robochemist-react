@@ -25,9 +25,6 @@ const SyllabusManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ d
 const SlideManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.SlideManagement })));
 const TransactionManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.TransactionManagement })));
 
-// Admin pages
-const AdminDashboard = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminDashboard })));
-
 // Loading component
 const LoadingSpinner = () => (
   <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -68,18 +65,6 @@ function App() {
               <Route path="transactions" element={<TransactionManagement />} />
             </Route>
 
-            {/* Admin Routes */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<AdminDashboard />} />
-            </Route>
-            
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
