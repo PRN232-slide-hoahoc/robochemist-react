@@ -25,6 +25,7 @@ export const useLogin = () => {
       const userRole = userInfo.role?.toLowerCase();
       
       switch (userRole) {
+        case 'admin':
         case 'staff':
           navigate('/staff/templates');
           break;
