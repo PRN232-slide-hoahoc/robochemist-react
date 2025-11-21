@@ -26,10 +26,8 @@ export const useLogin = () => {
       
       switch (userRole) {
         case 'admin':
-          navigate('/admin');
-          break;
         case 'staff':
-          navigate('/staff');
+          navigate('/staff/templates');
           break;
         case 'user':
         default:

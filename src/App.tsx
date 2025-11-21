@@ -8,7 +8,6 @@ import { AdminLayout } from '@/components/layout/AdminLayout';
 
 // Lazy load pages
 const HomePage = lazy(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })));
-const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })));
 const WalletPage = lazy(() => import('@/pages/WalletPage').then(m => ({ default: m.WalletPage })));
 const PaymentCallbackPage = lazy(() => import('@/pages/PaymentCallbackPage').then(m => ({ default: m.PaymentCallbackPage })));
@@ -19,16 +18,12 @@ const CreateMatrixPage = lazy(() => import('@/pages/CreateMatrixPage').then(m =>
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 // Staff pages
-const StaffDashboard = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.StaffDashboard })));
 const TemplateManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.TemplateManagement })));
 const OrderManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.OrderManagement })));
 const QuestionManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.QuestionManagement })));
 const SyllabusManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.SyllabusManagement })));
 const SlideManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.SlideManagement })));
 const TransactionManagement = lazy(() => import('@/pages/StaffPage').then(m => ({ default: m.TransactionManagement })));
-
-// Admin pages
-const AdminDashboard = lazy(() => import('@/pages/AdminPage').then(m => ({ default: m.AdminDashboard })));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -45,7 +40,6 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/wallet" element={<WalletPage />} />
             <Route path="/payment/callback" element={<PaymentCallbackPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
@@ -62,25 +56,13 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<StaffDashboard />} />
+              <Route index element={<TemplateManagement />} />
               <Route path="templates" element={<TemplateManagement />} />
               <Route path="orders" element={<OrderManagement />} />
               <Route path="questions" element={<QuestionManagement />} />
               <Route path="syllabuses" element={<SyllabusManagement />} />
               <Route path="slides" element={<SlideManagement />} />
               <Route path="transactions" element={<TransactionManagement />} />
-            </Route>
-
-            {/* Admin Routes */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<AdminDashboard />} />
             </Route>
             
             <Route path="*" element={<NotFoundPage />} />

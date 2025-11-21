@@ -77,6 +77,6 @@ export const API_ENDPOINTS = {
  */
 export const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://localhost:5001',
-  TIMEOUT: 30000, // Increased timeout for file uploads
+  TIMEOUT: 300000, // Increased timeout for file uploads
 } as const;
 
